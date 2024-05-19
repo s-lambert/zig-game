@@ -1,0 +1,7 @@
+{
+  "x86_64-windows-gnu": {
+    "include": "./x86_64-w64-mingw32/include",
+    "libs": "./x86_64-w64-mingw32/lib",
+    "bin": "./x86_64-w64-mingw32/bin"
+  }
+}
