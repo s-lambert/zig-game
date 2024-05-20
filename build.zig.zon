@@ -15,6 +15,8 @@
     // the build root itself.
     // A directory listed here means that all files within, recursively, are included.
     .paths = .{
+        ".build_config",
+        "x86_64-w64-mingw32",
         "build.zig",
         "build.zig.zon",
         "src",
