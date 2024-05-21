@@ -29,3 +29,16 @@ pub fn aabb_intersect(rect_a: *const sdl.RectangleF, rect_b: *const sdl.Rectangl
     const b_y_max = rect_b.y + rect_b.height;
     return (a_x_min < b_x_max and a_x_max > b_x_min) and (a_y_min < b_y_max and a_y_max > b_y_min);
 }
+
+pub fn xy_intersect(
+    x1_min: usize,
+    x1_max: usize,
+    y1_min: usize,
+    y1_max: usize,
+    x2_min: usize,
+    x2_max: usize,
+    y2_min: usize,
+    y2_max: usize,
+) bool {
+    return (x1_min <= x2_max and x1_max >= x2_min) and (y1_min <= y2_max and y1_max >= y2_min);
+}

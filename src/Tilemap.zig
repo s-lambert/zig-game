@@ -34,24 +34,26 @@ const map = [constants.tiles_height * constants.tiles_width]u8{
     0, 1, 5, 25, 26, 27, 5, 0, 1, 5,
 };
 
-const bounds: sdl.RectangleF = .{ .x = 64.0, .y = 64.0, .width = 128.0, .height = 128.0 };
-
 pub fn draw(_: jok.Context) !void {
     const dungeon_tilemap = sheet.getSpriteByName("dungeon_tilemap").?;
+
+    const bounds_min_x: usize = 1;
+    const bounds_max_x: usize = 4;
+    const bounds_min_y: usize = 1;
+    const bounds_max_y: usize = 3;
+
     for (map, 0..) |tile, tile_index| {
         const tile_x = tile_index % constants.tiles_width;
         const tile_y = tile_index / constants.tiles_width;
 
-        const spritesheet_x = tile % tilemap_columns;
-        const spritesheet_y = tile / tilemap_columns;
-
         const tile_pos = constants.tile_pos(tile_x, tile_y);
-        const tile_rect: sdl.RectangleF = .{ .x = tile_pos.x, .y = tile_pos.y, .width = 64.0, .height = 64.0 };
 
-        if (!constants.aabb_intersect(&bounds, &tile_rect)) {
+        if (!constants.xy_intersect(bounds_min_x, bounds_max_x, bounds_min_y, bounds_max_y, tile_x, tile_x, tile_y, tile_y)) {
             continue;
         }
 
+        const spritesheet_x = tile % tilemap_columns;
+        const spritesheet_y = tile / tilemap_columns;
         try j2d.sprite(
             dungeon_tilemap.getSubSprite(
                 @as(f32, @floatFromInt(spritesheet_x)) * constants.tile_size_f,
