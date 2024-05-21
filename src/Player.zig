@@ -1,3 +1,4 @@
+const constants = @import("./constants.zig");
 const std = @import("std");
 const jok = @import("jok");
 const sdl = jok.sdl;
@@ -9,15 +10,14 @@ var animation: []const u8 = "player_down";
 var flip_h = false;
 
 const velocity = 100;
-var pos = sdl.PointF{ .x = 200, .y = 200 };
+var pos: sdl.PointF = constants.tile_pos(1, 1);
 
 pub fn init(ctx: jok.Context) !void {
-    const size = ctx.getCanvasSize();
     sheet = try j2d.SpriteSheet.fromPicturesInDir(
         ctx,
         "assets/images",
-        @intFromFloat(size.x),
-        @intFromFloat(size.y),
+        2000,
+        2000,
         1,
         true,
         .{},
@@ -95,25 +95,16 @@ pub fn update(ctx: jok.Context) !void {
 }
 
 pub fn draw(ctx: jok.Context) !void {
-    // try j2d.sprite(
-    //     sheet.getSpriteByName("player").?,
-    //     .{
-    //         .pos = .{ .x = 0, .y = 50 },
-    //         .tint_color = sdl.Color.rgb(100, 100, 100),
-    //         .scale = .{ .x = 4, .y = 4 },
-    //     },
-    // );
     try j2d.sprite(
         try animator.getCurrentFrame(animation),
         .{
             .pos = pos,
             .flip_h = flip_h,
-            .scale = .{ .x = 2, .y = 2 },
         },
     );
     jok.font.debugDraw(
         ctx,
-        .{ .x = 300, .y = 0 },
+        .{ .x = 0, .y = 0 },
         "Press up/down/left/right to move character around",
         .{},
     );
