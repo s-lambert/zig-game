@@ -8,9 +8,10 @@ var sheet: *j2d.SpriteSheet = undefined;
 var animator: *j2d.AnimationSystem = undefined;
 var animation: []const u8 = "player_down";
 var flip_h = false;
+const anchor_point: sdl.PointF = .{ .x = 0.0, .y = 0.3333 };
 
 const velocity = 100;
-var pos: sdl.PointF = constants.tile_pos(1, 1);
+var pos: sdl.PointF = constants.tile_pos(0, 3);
 
 pub fn init(ctx: jok.Context) !void {
     sheet = try j2d.SpriteSheet.fromPicturesInDir(
@@ -99,7 +100,9 @@ pub fn draw(ctx: jok.Context) !void {
         try animator.getCurrentFrame(animation),
         .{
             .pos = pos,
+            .scale = constants.tiles_scale,
             .flip_h = flip_h,
+            .anchor_point = anchor_point,
         },
     );
     jok.font.debugDraw(
