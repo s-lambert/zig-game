@@ -10,7 +10,7 @@ var animation: []const u8 = "player_down";
 var flip_h = false;
 const anchor_point: sdl.PointF = .{ .x = 0.0, .y = 0.3333 };
 
-const velocity = 100;
+const velocity = constants.tile_size * 10;
 var pos: sdl.PointF = constants.tile_pos(0, 3);
 
 pub fn init(ctx: jok.Context) !void {
