@@ -20,15 +20,18 @@ pub fn init(ctx: jok.Context) !void {
     );
 }
 
+const tilemap_columns = 12;
+const tilemap_rows = 11;
+
 const map = [constants.tiles_height * constants.tiles_width]u8{
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    0, 1, 5, 0, 0, 1, 5, 0, 1, 5,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    8, 1, 5, 0, 0, 1, 5, 0, 1, 5,
-    8, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    8, 1, 5, 0, 0, 1, 5, 0, 1, 5,
-    0, 1, 5, 0, 0, 1, 5, 0, 1, 5,
-    0, 1, 5, 0, 0, 1, 5, 0, 1, 5,
+    1, 1, 1, 1,  1,  1,  1, 1, 1, 1,
+    0, 1, 5, 0,  0,  1,  5, 0, 1, 5,
+    1, 1, 1, 1,  1,  1,  1, 1, 1, 1,
+    8, 1, 5, 0,  0,  1,  5, 0, 1, 5,
+    8, 1, 1, 1,  1,  1,  1, 1, 1, 1,
+    8, 1, 5, 1,  2,  3,  5, 0, 1, 5,
+    0, 1, 5, 13, 14, 15, 5, 0, 1, 5,
+    0, 1, 5, 25, 26, 27, 5, 0, 1, 5,
 };
 
 pub fn draw(_: jok.Context) !void {
@@ -36,10 +39,14 @@ pub fn draw(_: jok.Context) !void {
     for (map, 0..) |tile, tileNum| {
         const colNum = tileNum % constants.tiles_width;
         const rowNum = tileNum / constants.tiles_width;
+
+        const tileColNum = tile % tilemap_columns;
+        const tileRowNum = tile / tilemap_columns;
+
         try j2d.sprite(
             dungeon_tilemap.getSubSprite(
-                @as(f32, @floatFromInt(tile)) * 16.0,
-                16,
+                @as(f32, @floatFromInt(tileColNum)) * 16.0,
+                @as(f32, @floatFromInt(tileRowNum)) * 16.0,
                 16,
                 16,
             ),
