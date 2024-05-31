@@ -2,22 +2,11 @@
     .name = "game",
     .version = "0.0.0",
     .dependencies = .{
-        .jok = .{
-            .url = "https://github.com/jack-ji/jok/archive/a4cb54543f2ee7a3b36e0a92006df9e86d53e030.tar.gz",
-            .hash = "12203a882d0b4cefba3a6c1542340e3d630d85589a9baa159a994d548a494a4029a4",
-        },
         .@"raylib-zig" = .{
-            .url = "https://github.com/Not-Nik/raylib-zig/archive/devel.tar.gz",
+            .url = "https://github.com/Not-Nik/raylib-zig/archive/39909cdcb35a30cef55b43814f84aa7f85705ac6.tar.gz",
             .hash = "122050b7d335326149738d72f74c8d1b7bdb89c07b12c1fa9b87fe61b69ae7750a21",
         },
     },
-
-    // Specifies the set of files and directories that are included in this package.
-    // Only files and directories listed here are included in the `hash` that
-    // is computed for this package.
-    // Paths are relative to the build root. Use the empty string (`""`) to refer to
-    // the build root itself.
-    // A directory listed here means that all files within, recursively, are included.
     .paths = .{
         ".build_config",
         "x86_64-w64-mingw32",
