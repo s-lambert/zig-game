@@ -22,7 +22,7 @@ pub fn main() !void {
         rl.beginDrawing();
         defer rl.endDrawing();
 
-        rl.clearBackground(rl.Color.white);
+        rl.clearBackground(rl.Color.ray_white);
 
         editor_camera.begin();
         defer editor_camera.end();

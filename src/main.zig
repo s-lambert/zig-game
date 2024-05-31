@@ -1,40 +1,34 @@
-const std = @import("std");
-const jok = @import("jok");
-const sdl = jok.sdl;
-const j2d = jok.j2d;
 const Player = @import("./Player.zig");
 const Tilemap = @import("./Tilemap.zig");
 const constants = @import("./constants.zig");
+const rl = @import("raylib");
 
-pub const jok_window_borderless = true;
-pub const jok_window_size: jok.config.WindowSize = .{
-    .custom = .{ .width = constants.window_width, .height = constants.window_height },
-};
+pub fn main() !void {
+    rl.initWindow(constants.window_width, constants.window_height, "Game");
+    defer rl.closeWindow();
 
-pub fn init(ctx: jok.Context) !void {
-    try Tilemap.init(ctx);
-    try Player.init(ctx);
-}
+    const game_camera: rl.Camera2D = .{
+        .offset = rl.Vector2.init(0.0, 0.0),
+        .target = rl.Vector2.init(0.0, 0.0),
+        .rotation = 0.0,
+        .zoom = 1.0,
+    };
 
-pub fn event(ctx: jok.Context, evt: sdl.Event) !void {
-    try Player.event(ctx, evt);
-}
+    Tilemap.preload();
+    Player.preload();
 
-pub fn update(ctx: jok.Context) !void {
-    try Player.update(ctx);
-}
+    while (!rl.windowShouldClose()) {
+        Player.rl_update();
 
-pub fn draw(ctx: jok.Context) !void {
-    ctx.clear(sdl.Color.rgb(77, 77, 77));
+        rl.beginDrawing();
+        defer rl.endDrawing();
 
-    j2d.begin(.{});
-    defer j2d.end();
+        rl.clearBackground(rl.Color.ray_white);
 
-    try Tilemap.draw(ctx);
-    try Player.draw(ctx);
-}
+        game_camera.begin();
+        defer game_camera.end();
 
-pub fn quit(ctx: jok.Context) void {
-    Tilemap.quit(ctx);
-    Player.quit(ctx);
+        Tilemap.rl_draw();
+        Player.rl_draw();
+    }
 }

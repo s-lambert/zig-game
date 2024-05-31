@@ -1,4 +1,6 @@
 const std = @import("std");
+const rl = @import("raylib");
+
 const jok = @import("jok");
 const sdl = jok.sdl;
 
@@ -12,6 +14,13 @@ pub const window_width = 16 * tiles_width * tiles_mulitipler;
 
 pub const tiles_scale: sdl.PointF = .{ .x = tiles_mulitipler, .y = tiles_mulitipler };
 pub fn tile_pos(x: usize, y: usize) sdl.PointF {
+    return .{
+        .x = 0.0 + @as(f32, @floatFromInt(x)) * tile_size_f * tiles_mulitipler,
+        .y = 0.0 + @as(f32, @floatFromInt(y)) * tile_size_f * tiles_mulitipler,
+    };
+}
+
+pub fn rl_tile_pos(x: usize, y: usize) rl.Vector2 {
     return .{
         .x = 0.0 + @as(f32, @floatFromInt(x)) * tile_size_f * tiles_mulitipler,
         .y = 0.0 + @as(f32, @floatFromInt(y)) * tile_size_f * tiles_mulitipler,
