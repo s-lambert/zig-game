@@ -1,19 +1,5 @@
 const rl = @import("raylib");
-
-fn guiRect(rect: rl.Rectangle, borderWidth: i32, borderColor: rl.Color, color: rl.Color) void {
-    const x: i32 = @intFromFloat(rect.x);
-    const y: i32 = @intFromFloat(rect.y);
-    const width: i32 = @intFromFloat(rect.width);
-    const height: i32 = @intFromFloat(rect.height);
-
-    rl.drawRectangle(x, y, width, height, color);
-    if (borderWidth > 0) {
-        rl.drawRectangle(x, y, width, borderWidth, borderColor);
-        rl.drawRectangle(x, y + borderWidth, borderWidth, height - (2 * borderWidth), borderColor);
-        rl.drawRectangle(x + width - borderWidth, y + borderWidth, borderWidth, height - (2 * borderWidth), borderColor);
-        rl.drawRectangle(x, y + height - borderWidth, width, borderWidth, borderColor);
-    }
-}
+const rg = @import("raygui");
 
 pub fn main() !void {
     const screen_width = 800;
@@ -42,12 +28,12 @@ pub fn main() !void {
         defer editor_camera.end();
 
         tilemap_texture.draw(0, 0, rl.Color.white);
-        guiRect(rl.Rectangle{
+        _ = rg.guiTextBox(rl.Rectangle{
             .x = 10,
             .y = 10,
             .width = 50,
             .height = 50,
-        }, 2, rl.Color.light_gray, rl.Color.ray_white);
+        }, @constCast("Test"), 8, false);
         rl.drawText("Congrats! You created your first window!", 0, 0, 20, rl.Color.black);
     }
 }

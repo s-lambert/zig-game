@@ -1,4 +1,4 @@
 inspo/
 zig-out/
-zig-cache/
+.zig-cache/
 x86_64-w64-mingw32/

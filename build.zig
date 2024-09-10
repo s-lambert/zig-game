@@ -10,8 +10,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const raylib = raylib_dep.module("raylib"); // main raylib module
-    const raylib_math = raylib_dep.module("raylib-math"); // raymath module
-    const rlgl = raylib_dep.module("rlgl"); // rlgl module
+    const raygui = raylib_dep.module("raygui"); // raygui module
     const raylib_artifact = raylib_dep.artifact("raylib"); // raylib C library
 
     const editor_exe = b.addExecutable(.{
@@ -23,8 +22,7 @@ pub fn build(b: *std.Build) void {
 
     editor_exe.linkLibrary(raylib_artifact);
     editor_exe.root_module.addImport("raylib", raylib);
-    editor_exe.root_module.addImport("raylib-math", raylib_math);
-    editor_exe.root_module.addImport("rlgl", rlgl);
+    editor_exe.root_module.addImport("raygui", raygui);
 
     const run_editor_cmd = b.addRunArtifact(editor_exe);
     const run_editor_step = b.step("editor", "Run tile editor");
@@ -40,8 +38,6 @@ pub fn build(b: *std.Build) void {
 
     game_exe.linkLibrary(raylib_artifact);
     game_exe.root_module.addImport("raylib", raylib);
-    game_exe.root_module.addImport("raylib-math", raylib_math);
-    game_exe.root_module.addImport("rlgl", rlgl);
 
     const run_game_cmd = b.addRunArtifact(game_exe);
     const run_game_step = b.step("run", "Run game");
@@ -57,8 +53,6 @@ pub fn build(b: *std.Build) void {
 
     game_check.linkLibrary(raylib_artifact);
     game_check.root_module.addImport("raylib", raylib);
-    game_check.root_module.addImport("raylib-math", raylib_math);
-    game_check.root_module.addImport("rlgl", rlgl);
 
     const editor_check = b.addExecutable(.{
         .name = "raylib-editor",
@@ -69,8 +63,6 @@ pub fn build(b: *std.Build) void {
 
     editor_check.linkLibrary(raylib_artifact);
     editor_check.root_module.addImport("raylib", raylib);
-    editor_check.root_module.addImport("raylib-math", raylib_math);
-    editor_check.root_module.addImport("rlgl", rlgl);
 
     const check = b.step("check", "Check if raylib-game compiles");
     check.dependOn(&game_check.step);
