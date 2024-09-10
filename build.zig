@@ -48,18 +48,31 @@ pub fn build(b: *std.Build) void {
 
     run_game_step.dependOn(&run_game_cmd.step);
 
-    const exe_check = b.addExecutable(.{
+    const game_check = b.addExecutable(.{
         .name = "raylib-game",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    exe_check.linkLibrary(raylib_artifact);
-    exe_check.root_module.addImport("raylib", raylib);
-    exe_check.root_module.addImport("raylib-math", raylib_math);
-    exe_check.root_module.addImport("rlgl", rlgl);
+    game_check.linkLibrary(raylib_artifact);
+    game_check.root_module.addImport("raylib", raylib);
+    game_check.root_module.addImport("raylib-math", raylib_math);
+    game_check.root_module.addImport("rlgl", rlgl);
+
+    const editor_check = b.addExecutable(.{
+        .name = "raylib-editor",
+        .root_source_file = b.path("src/tile_editor.zig"),
+        .optimize = optimize,
+        .target = target,
+    });
+
+    editor_check.linkLibrary(raylib_artifact);
+    editor_check.root_module.addImport("raylib", raylib);
+    editor_check.root_module.addImport("raylib-math", raylib_math);
+    editor_check.root_module.addImport("rlgl", rlgl);
 
     const check = b.step("check", "Check if raylib-game compiles");
-    check.dependOn(&exe_check.step);
+    check.dependOn(&game_check.step);
+    check.dependOn(&editor_check.step);
 }
