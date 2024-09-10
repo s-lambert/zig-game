@@ -139,10 +139,10 @@ pub fn rl_draw() void {
 }
 
 pub fn rl_update() void {
-    // var force_replay = false;
     if (rl.isKeyDown(rl.KeyboardKey.key_up)) {
         current_pos.y -= velocity * rl.getFrameTime();
         current_keyframe.set(3, 2);
+        current_keyframe.flipped = false;
 
         // animation = "player_up";
         // flip_h = false;
@@ -150,18 +150,21 @@ pub fn rl_update() void {
     } else if (rl.isKeyDown(rl.KeyboardKey.key_down)) {
         current_pos.y += velocity * rl.getFrameTime();
         current_keyframe.set(2, 0);
+        current_keyframe.flipped = false;
         // animation = "player_down";
         // flip_h = false;
         // force_replay = true;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_right)) {
         current_pos.x += velocity * rl.getFrameTime();
         current_keyframe.set(1, 1);
+        current_keyframe.flipped = true;
         // animation = "player_left_right";
         // flip_h = true;
         // force_replay = true;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_left)) {
         current_pos.x -= velocity * rl.getFrameTime();
         current_keyframe.set(1, 1);
+        current_keyframe.flipped = false;
         // animation = "player_left_right";
         // flip_h = false;
         // force_replay = true;
