@@ -1,5 +1,20 @@
 const rl = @import("raylib");
 
+fn guiRect(rect: rl.Rectangle, borderWidth: i32, borderColor: rl.Color, color: rl.Color) void {
+    const x: i32 = @intFromFloat(rect.x);
+    const y: i32 = @intFromFloat(rect.y);
+    const width: i32 = @intFromFloat(rect.width);
+    const height: i32 = @intFromFloat(rect.height);
+
+    rl.drawRectangle(x, y, width, height, color);
+    if (borderWidth > 0) {
+        rl.drawRectangle(x, y, width, borderWidth, borderColor);
+        rl.drawRectangle(x, y + borderWidth, borderWidth, height - (2 * borderWidth), borderColor);
+        rl.drawRectangle(x + width - borderWidth, y + borderWidth, borderWidth, height - (2 * borderWidth), borderColor);
+        rl.drawRectangle(x, y + height - borderWidth, width, borderWidth, borderColor);
+    }
+}
+
 pub fn main() !void {
     const screen_width = 800;
     const screen_height = 450;
@@ -9,13 +24,12 @@ pub fn main() !void {
 
     const tilemap_image = rl.loadImage("assets/images/dungeon_tilemap.png");
     const tilemap_texture = rl.loadTextureFromImage(tilemap_image);
-    // const scarfy: rl.Texture = rl.Texture.init("assets/images/scarfy.png");
 
     const editor_camera: rl.Camera2D = .{
         .offset = rl.Vector2.init(0.0, 0.0),
         .target = rl.Vector2.init(0.0, 0.0),
         .rotation = 0.0,
-        .zoom = 4.0,
+        .zoom = 2.0,
     };
 
     while (!rl.windowShouldClose()) {
@@ -27,8 +41,13 @@ pub fn main() !void {
         editor_camera.begin();
         defer editor_camera.end();
 
-        rl.drawText("Congrats! You created your first window!", 190, 200, 20, rl.Color.light_gray);
-
         tilemap_texture.draw(0, 0, rl.Color.white);
+        guiRect(rl.Rectangle{
+            .x = 10,
+            .y = 10,
+            .width = 50,
+            .height = 50,
+        }, 2, rl.Color.light_gray, rl.Color.ray_white);
+        rl.drawText("Congrats! You created your first window!", 0, 0, 20, rl.Color.black);
     }
 }
