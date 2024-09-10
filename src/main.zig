@@ -11,7 +11,7 @@ pub fn main() !void {
         .offset = rl.Vector2.init(0.0, 0.0),
         .target = rl.Vector2.init(0.0, 0.0),
         .rotation = 0.0,
-        .zoom = 1.0,
+        .zoom = 2.0,
     };
 
     Tilemap.preload();
@@ -27,6 +27,9 @@ pub fn main() !void {
 
         game_camera.begin();
         defer game_camera.end();
+
+        rl.drawRectangle(0, 0, 16, 16, rl.Color.sky_blue);
+        rl.drawRectangle(80, 80, 16, 16, rl.Color.sky_blue);
 
         Tilemap.rl_draw();
         Player.rl_draw();

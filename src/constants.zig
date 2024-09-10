@@ -22,8 +22,8 @@ pub fn tile_pos(x: usize, y: usize) sdl.PointF {
 
 pub fn rl_tile_pos(x: usize, y: usize) rl.Vector2 {
     return .{
-        .x = 0.0 + @as(f32, @floatFromInt(x)) * tile_size_f * tiles_mulitipler,
-        .y = 0.0 + @as(f32, @floatFromInt(y)) * tile_size_f * tiles_mulitipler,
+        .x = 0.0 + @as(f32, @floatFromInt(x)) * tile_size_f,
+        .y = 0.0 + @as(f32, @floatFromInt(y)) * tile_size_f,
     };
 }
 

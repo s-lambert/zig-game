@@ -1,0 +1,5 @@
+{
+  // trying to reproduce https://kristoff.it/blog/improving-your-zls-experience/
+  "zig.buildOnSave": true,
+  "zig.zls.buildOnSaveStep": "check"
+}

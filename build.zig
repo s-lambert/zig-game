@@ -47,4 +47,19 @@ pub fn build(b: *std.Build) void {
     const run_game_step = b.step("run", "Run game");
 
     run_game_step.dependOn(&run_game_cmd.step);
+
+    const exe_check = b.addExecutable(.{
+        .name = "raylib-game",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    exe_check.linkLibrary(raylib_artifact);
+    exe_check.root_module.addImport("raylib", raylib);
+    exe_check.root_module.addImport("raylib-math", raylib_math);
+    exe_check.root_module.addImport("rlgl", rlgl);
+
+    const check = b.step("check", "Check if raylib-game compiles");
+    check.dependOn(&exe_check.step);
 }
