@@ -63,6 +63,7 @@ pub fn build(b: *std.Build) void {
 
     editor_check.linkLibrary(raylib_artifact);
     editor_check.root_module.addImport("raylib", raylib);
+    editor_check.root_module.addImport("raygui", raygui);
 
     const check = b.step("check", "Check if raylib-game compiles");
     check.dependOn(&game_check.step);
