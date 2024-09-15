@@ -5,9 +5,8 @@ const sprite = @import("chars/sprite.zig");
 
 var spritesheet_texture: rl.Texture2D = undefined;
 var current_keyframe = sprite.Frame(5, 3, 16, 24).init(1, 0);
-var current_pos: rl.Rectangle = .{ .x = 0, .y = 0, .width = 16.0, .height = 24.0 };
+var pos: sprite.Position = .{ .x = 0, .y = 0, .height = 24.0 };
 const anchor: rl.Vector2 = rl.Vector2.init(0, 8);
-const velocity = constants.tile_size * 10;
 
 // pub fn init(ctx: jok.Context) !void {
 //     sheet = try j2d.SpriteSheet.fromPicturesInDir(
@@ -83,10 +82,10 @@ pub fn preload() void {
     spritesheet_texture = rl.loadTextureFromImage(raw_image);
 }
 
-pub fn rl_draw() void {
+pub fn draw() void {
     spritesheet_texture.drawPro(
         current_keyframe.as_rect(),
-        current_pos,
+        pos.as_rect(),
         anchor,
         0.0,
         rl.Color.white,
@@ -106,28 +105,28 @@ pub fn rl_update() void {
     }
 
     if (rl.isKeyDown(rl.KeyboardKey.key_up)) {
-        current_pos.y -= constants.tile_size;
+        pos.y -= 1;
         current_keyframe.set(3, 2);
         current_keyframe.flipped = false;
         reset_key_cooldown();
         // animation = "player_up";
         // force_replay = true;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_down)) {
-        current_pos.y += constants.tile_size;
+        pos.y += 1;
         current_keyframe.set(2, 0);
         current_keyframe.flipped = false;
         reset_key_cooldown();
         // animation = "player_down";
         // force_replay = true;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_right)) {
-        current_pos.x += constants.tile_size;
+        pos.x += 1;
         current_keyframe.set(1, 1);
         current_keyframe.flipped = true;
         reset_key_cooldown();
         // animation = "player_left_right";
         // force_replay = true;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_left)) {
-        current_pos.x -= constants.tile_size;
+        pos.x -= 1;
         current_keyframe.set(1, 1);
         current_keyframe.flipped = false;
         reset_key_cooldown();
