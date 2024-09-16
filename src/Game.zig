@@ -74,14 +74,20 @@ pub fn preload() void {
     game_state.tilemap.spritesheet = load_texture("./assets/dungeon_tilemap.png");
 }
 
-fn can_move_to(x: usize, y: usize) bool {
-    const tile_index = y * constants.tiles_width + x;
-
-    if (tile_index > constants.tiles_height * constants.tiles_width) {
+fn can_move_to(from: sprite.Position, dir_x: i32, dir_y: i32) bool {
+    if ((from.x == 0 and dir_x == -1) or
+        (from.y == 0 and dir_y == -1) or
+        (from.x == constants.tiles_width - 1 and dir_x == 1) or
+        (from.y == constants.tiles_height - 1 and dir_y == 1))
+    {
         return false;
     }
 
-    const tile = first_layer[tile_index];
+    const x = @as(i32, @intCast(from.x)) + dir_x;
+    const y = @as(i32, @intCast(from.y)) + dir_y;
+    const tile_index = y * constants.tiles_width + x;
+
+    const tile = first_layer[@as(usize, @intCast(tile_index))];
     return tile == 0 or tile == 14;
 }
 
@@ -96,19 +102,27 @@ pub fn update() void {
     }
     const player = &game_state.player;
     if (rl.isKeyDown(rl.KeyboardKey.key_up)) {
-        player.*.position.y -= 1;
+        if (can_move_to(player.*.position, 0, -1)) {
+            player.*.position.y -= 1;
+        }
         player.*.keyframe.set(3, 2);
         player.*.keyframe.flipped = false;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_down)) {
-        player.*.position.y += 1;
+        if (can_move_to(player.*.position, 0, 1)) {
+            player.*.position.y += 1;
+        }
         player.*.keyframe.set(2, 0);
         player.*.keyframe.flipped = false;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_right)) {
-        player.*.position.x += 1;
+        if (can_move_to(player.*.position, 1, 0)) {
+            player.*.position.x += 1;
+        }
         player.*.keyframe.set(1, 1);
         player.*.keyframe.flipped = true;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_left)) {
-        player.*.position.x -= 1;
+        if (can_move_to(player.*.position, -1, 0)) {
+            player.*.position.x -= 1;
+        }
         player.*.keyframe.set(1, 1);
         player.*.keyframe.flipped = false;
     } else {
