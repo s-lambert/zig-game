@@ -1,7 +1,7 @@
-const Player = @import("./Player.zig");
-const Tilemap = @import("./Tilemap.zig");
-const constants = @import("./constants.zig");
 const rl = @import("raylib");
+const constants = @import("./constants.zig");
+const sprite = @import("./sprite.zig");
+const Game = @import("./Game.zig");
 
 const game_camera: rl.Camera2D = .{
     .offset = rl.Vector2.init(0.0, 0.0),
@@ -14,17 +14,12 @@ pub fn main() !void {
     rl.initWindow(constants.window_width, constants.window_height, "Game");
     defer rl.closeWindow();
 
-    Tilemap.preload();
-    Player.preload();
+    Game.preload();
 
     while (!rl.windowShouldClose()) {
-        update();
+        Game.update();
         draw();
     }
-}
-
-fn update() void {
-    Player.rl_update();
 }
 
 fn draw() void {
@@ -34,6 +29,5 @@ fn draw() void {
     game_camera.begin();
     defer game_camera.end();
 
-    Tilemap.rl_draw();
-    Player.rl_draw();
+    Game.draw();
 }

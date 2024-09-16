@@ -1,5 +1,22 @@
 const rl = @import("raylib");
 
+pub const Position = struct {
+    const Self = @This();
+
+    x: u32,
+    y: u32,
+    height: f32 = 24.0,
+
+    pub fn as_rect(self: *Self) rl.Rectangle {
+        return .{
+            .x = @floatFromInt(self.x * 16),
+            .y = @floatFromInt(self.y * 16),
+            .width = 16.0,
+            .height = self.height,
+        };
+    }
+};
+
 pub fn Frame(
     comptime rows: u32,
     comptime columns: u32,
