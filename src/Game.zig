@@ -2,6 +2,7 @@ const std = @import("std");
 const rl = @import("raylib");
 const sprite = @import("./sprite.zig");
 const constants = @import("./constants.zig");
+const utils = @import("./utils.zig");
 
 // spritesheet columns / rows
 const tilemap_columns = 12;
@@ -62,16 +63,10 @@ var game_state = GameState{
 };
 const default_anchor: rl.Vector2 = rl.Vector2.init(0, 8);
 
-fn load_texture(comptime image_path: []const u8) rl.Texture2D {
-    const png_data = @embedFile(image_path);
-    const raw_image: rl.Image = rl.loadImageFromMemory(".png", png_data);
-    return rl.loadTextureFromImage(raw_image);
-}
-
 pub fn preload() void {
-    game_state.player.spritesheet = load_texture("./assets/player.png");
-    game_state.enemy.spritesheet = load_texture("./assets/daoist.png");
-    game_state.tilemap.spritesheet = load_texture("./assets/dungeon_tilemap.png");
+    game_state.player.spritesheet = utils.load_texture("./assets/player.png");
+    game_state.enemy.spritesheet = utils.load_texture("./assets/daoist.png");
+    game_state.tilemap.spritesheet = utils.load_texture("./assets/dungeon_tilemap.png");
 }
 
 fn can_move_to(from: sprite.Position, dir_x: i32, dir_y: i32) bool {

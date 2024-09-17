@@ -6,12 +6,13 @@ pub const Position = struct {
     x: u32,
     y: u32,
     height: f32 = 24.0,
+    width: f32 = 16.0,
 
     pub fn as_rect(self: *Self) rl.Rectangle {
         return .{
-            .x = @floatFromInt(self.x * 16),
-            .y = @floatFromInt(self.y * 16),
-            .width = 16.0,
+            .x = @as(f32, @floatFromInt(self.x)) * 16.0,
+            .y = @as(f32, @floatFromInt(self.y)) * 16.0,
+            .width = self.width,
             .height = self.height,
         };
     }
