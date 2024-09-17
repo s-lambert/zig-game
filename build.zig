@@ -15,7 +15,7 @@ pub fn build(b: *std.Build) void {
 
     const editor_exe = b.addExecutable(.{
         .name = "raylib-editor",
-        .root_source_file = b.path("src/tile_editor.zig"),
+        .root_source_file = b.path("src/editor_main.zig"),
         .optimize = optimize,
         .target = target,
     });
@@ -31,7 +31,7 @@ pub fn build(b: *std.Build) void {
 
     const game_exe = b.addExecutable(.{
         .name = "raylib-game",
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/game_main.zig"),
         .optimize = optimize,
         .target = target,
     });
@@ -40,13 +40,13 @@ pub fn build(b: *std.Build) void {
     game_exe.root_module.addImport("raylib", raylib);
 
     const run_game_cmd = b.addRunArtifact(game_exe);
-    const run_game_step = b.step("run", "Run game");
+    const run_game_step = b.step("game", "Run game");
 
     run_game_step.dependOn(&run_game_cmd.step);
 
     const game_check = b.addExecutable(.{
         .name = "raylib-game",
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/game_main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -56,7 +56,7 @@ pub fn build(b: *std.Build) void {
 
     const editor_check = b.addExecutable(.{
         .name = "raylib-editor",
-        .root_source_file = b.path("src/tile_editor.zig"),
+        .root_source_file = b.path("src/editor_main.zig"),
         .optimize = optimize,
         .target = target,
     });

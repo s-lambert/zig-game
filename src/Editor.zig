@@ -1,6 +1,7 @@
 const std = @import("std");
 const rl = @import("raylib");
 const rg = @import("raygui");
+const constants = @import("./constants.zig");
 const sprite = @import("./sprite.zig");
 
 const EditorState = struct {
@@ -48,14 +49,16 @@ pub fn draw() void {
         .{
             .x = 0,
             .y = 0,
-            .width = 800,
-            .height = 450,
+            .width = constants.window_width,
+            .height = constants.window_height,
         },
         "",
         16.0,
         1,
         &mouse_position,
     );
+
+    std.debug.print("x:{d} y:{d}\n", .{ mouse_position.x, mouse_position.y });
 
     rl.drawRectangleLinesEx(
         editor_state.cursor.position.as_rect(),
