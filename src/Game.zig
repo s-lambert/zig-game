@@ -145,7 +145,7 @@ fn draw_layer(layer: []const u8, ignore_base: bool) void {
         const spritesheet_x = tile % tilemap_columns;
         const spritesheet_y = tile / tilemap_columns;
 
-        const tile_pos = constants.rl_tile_pos(tile_x, tile_y);
+        const tile_pos = constants.tile_pos(tile_x, tile_y);
 
         game_state.tilemap.spritesheet.drawRec(
             .{

@@ -29,14 +29,14 @@ pub fn update() void {
         return;
     }
     const cursor = &editor_state.cursor;
-    if (rl.isKeyDown(rl.KeyboardKey.key_up)) {
+    if (rl.isKeyDown(rl.KeyboardKey.key_up) and cursor.*.position.y > 0) {
         cursor.*.position.y -= 1;
-    } else if (rl.isKeyDown(rl.KeyboardKey.key_down)) {
+    } else if (rl.isKeyDown(rl.KeyboardKey.key_down) and cursor.*.position.y < 15) {
         cursor.*.position.y += 1;
-    } else if (rl.isKeyDown(rl.KeyboardKey.key_right)) {
-        cursor.*.position.x += 1;
-    } else if (rl.isKeyDown(rl.KeyboardKey.key_left)) {
+    } else if (rl.isKeyDown(rl.KeyboardKey.key_left) and cursor.*.position.x > 0) {
         cursor.*.position.x -= 1;
+    } else if (rl.isKeyDown(rl.KeyboardKey.key_right) and cursor.*.position.x < 19) {
+        cursor.*.position.x += 1;
     } else {
         return;
     }

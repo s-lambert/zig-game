@@ -1,7 +1,7 @@
 const rl = @import("raylib");
 const constants = @import("./constants.zig");
 const sprite = @import("./sprite.zig");
-const Game = @import("./Game.zig");
+const Shmup = @import("./Shmup.zig");
 
 const game_camera: rl.Camera2D = .{
     .offset = rl.Vector2.init(0.0, 0.0),
@@ -14,20 +14,16 @@ pub fn main() !void {
     rl.initWindow(constants.window_width, constants.window_height, "Game");
     defer rl.closeWindow();
 
-    Game.preload();
+    Shmup.preload();
 
     while (!rl.windowShouldClose()) {
-        Game.update();
-        draw();
+        rl.beginDrawing();
+        defer rl.endDrawing();
+        rl.clearBackground(rl.Color.ray_white);
+        game_camera.begin();
+        defer game_camera.end();
+
+        Shmup.draw();
+        try Shmup.update();
     }
-}
-
-fn draw() void {
-    rl.beginDrawing();
-    defer rl.endDrawing();
-    rl.clearBackground(rl.Color.ray_white);
-    game_camera.begin();
-    defer game_camera.end();
-
-    Game.draw();
 }
