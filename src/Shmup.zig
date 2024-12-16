@@ -2,32 +2,38 @@ const std = @import("std");
 const rl = @import("raylib");
 
 const Circle = struct {
-    const Self = @This();
-
     x: f32,
     y: f32,
     radius: f32,
 };
 
-const Bullets = std.ArrayList(Circle);
+const Bullet = struct {
+    is_alive: bool,
+    time_alive: f32,
+    initial_x: f32,
+    area: Circle,
+};
+
+const MAX_BULLETS = std.math.pow(usize, 4, 2);
 
 const ShmupState = struct {
     player: struct {
         position: Circle,
-        bullets: Bullets,
+        next_bullet: usize,
+        bullets: [MAX_BULLETS]Bullet,
         fire_cooldown: f32,
     },
 };
 
 var shmup_state: ShmupState = undefined;
+var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
 pub fn preload() void {
-    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-
     shmup_state = .{
         .player = .{
             .position = Circle{ .x = 120.0, .y = 120.0, .radius = 8.0 },
-            .bullets = Bullets.init(arena_allocator.allocator()),
+            .next_bullet = 0,
+            .bullets = std.mem.zeroes([MAX_BULLETS]Bullet),
             .fire_cooldown = 0.0,
         },
     };
@@ -51,14 +57,28 @@ pub fn update() !void {
 
     if (player.*.fire_cooldown > 0.0) {
         player.*.fire_cooldown -= delta;
-    }
-    if (player.*.fire_cooldown <= 0.0 and rl.isKeyDown(rl.KeyboardKey.key_space)) {
+    } else if (rl.isKeyDown(rl.KeyboardKey.key_space)) {
         player.*.fire_cooldown = 0.2;
-        try player.*.bullets.append(.{
-            .x = player.*.position.x,
-            .y = player.*.position.y - player.*.position.radius,
-            .radius = 4.0,
-        });
+        const bullet = &player.bullets[player.next_bullet];
+        bullet.*.is_alive = true;
+        bullet.*.time_alive = 0.0;
+        bullet.*.area.x = player.*.position.x;
+        bullet.*.initial_x = bullet.*.area.x;
+        bullet.*.area.y = player.*.position.y - player.*.position.radius;
+        bullet.*.area.radius = 4.0;
+        player.*.next_bullet += 1;
+        player.*.next_bullet &= MAX_BULLETS - 1;
+    }
+
+    for (&player.bullets) |*bullet| {
+        if (bullet.is_alive) {
+            bullet.*.time_alive += delta;
+            bullet.area.y -= delta * 100.0;
+            bullet.area.x = bullet.initial_x + 20.0 * @sin(bullet.time_alive * 5.0);
+            if (bullet.area.y <= 0.0) {
+                bullet.is_alive = false;
+            }
+        }
     }
 }
 
@@ -71,12 +91,14 @@ pub fn draw() void {
         rl.Color.sky_blue,
     );
 
-    for (player.bullets.items) |bullet| {
-        rl.drawCircle(
-            @intFromFloat(bullet.x),
-            @intFromFloat(bullet.y),
-            bullet.radius,
-            rl.Color.green,
-        );
+    for (player.bullets) |bullet| {
+        if (bullet.is_alive) {
+            rl.drawCircle(
+                @intFromFloat(bullet.area.x),
+                @intFromFloat(bullet.area.y),
+                bullet.area.radius,
+                rl.Color.green,
+            );
+        }
     }
 }

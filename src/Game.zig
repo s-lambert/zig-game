@@ -90,7 +90,7 @@ var key_cooldown: f32 = 0.5;
 fn reset_key_cooldown() void {
     key_cooldown = 0.5;
 }
-pub fn update() void {
+pub fn update() !void {
     if (key_cooldown > 0.0) {
         key_cooldown -= rl.getFrameTime();
         return;
