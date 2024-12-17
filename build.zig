@@ -68,4 +68,19 @@ pub fn build(b: *std.Build) void {
     const check = b.step("check", "Check if raylib-game compiles");
     check.dependOn(&game_check.step);
     check.dependOn(&editor_check.step);
+
+    const dep_sokol = b.dependency("sokol", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const hello = b.addExecutable(.{
+        .name = "hello",
+        .target = target,
+        .optimize = optimize,
+        .root_source_file = b.path("src/sokol_main.zig"),
+    });
+    hello.root_module.addImport("sokol", dep_sokol.module("sokol"));
+    b.installArtifact(hello);
+    const run = b.addRunArtifact(hello);
+    b.step("sokol", "Run hello").dependOn(&run.step);
 }
