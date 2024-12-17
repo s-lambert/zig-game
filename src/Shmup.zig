@@ -53,6 +53,13 @@ pub fn preload() void {
     };
 }
 
+fn circle_collision(a: *Circle, b: *Circle) bool {
+    const dist_x = a.x - b.x;
+    const dist_y = a.y - b.y;
+    const distance = @sqrt(std.math.pow(f32, dist_x, 2) + std.math.pow(f32, dist_y, 2));
+    return distance <= (a.radius + b.radius);
+}
+
 pub fn update() !void {
     const delta = rl.getFrameTime();
 
@@ -115,6 +122,15 @@ pub fn update() !void {
         if (enemy.is_alive) {
             if (enemy.area.y <= 120.0) {
                 enemy.area.y += delta * 20.0;
+            }
+
+            for (&player.bullets) |*bullet| {
+                if (bullet.is_alive) {
+                    if (circle_collision(&enemy.area, &bullet.area)) {
+                        bullet.is_alive = false;
+                        enemy.is_alive = false;
+                    }
+                }
             }
         }
     }
