@@ -16,6 +16,13 @@ const Bullet = struct {
 
 const MAX_BULLETS = std.math.pow(usize, 4, 2);
 
+const Enemy = struct {
+    is_alive: bool,
+    area: Circle,
+};
+
+const MAX_ENEMIES = std.math.pow(usize, 4, 2);
+
 const ShmupState = struct {
     player: struct {
         position: Circle,
@@ -23,10 +30,14 @@ const ShmupState = struct {
         bullets: [MAX_BULLETS]Bullet,
         fire_cooldown: f32,
     },
+    spawn_cooldown: f32,
+    next_enemy: usize,
+    enemies: [MAX_ENEMIES]Enemy,
 };
 
 var shmup_state: ShmupState = undefined;
 var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+var rand_impl = std.rand.DefaultPrng.init(42);
 
 pub fn preload() void {
     shmup_state = .{
@@ -36,6 +47,9 @@ pub fn preload() void {
             .bullets = std.mem.zeroes([MAX_BULLETS]Bullet),
             .fire_cooldown = 0.0,
         },
+        .spawn_cooldown = 0.0,
+        .next_enemy = 0,
+        .enemies = std.mem.zeroes([MAX_ENEMIES]Enemy),
     };
 }
 
@@ -80,6 +94,30 @@ pub fn update() !void {
             }
         }
     }
+
+    if (shmup_state.spawn_cooldown > 0.0) {
+        shmup_state.spawn_cooldown -= delta;
+    } else {
+        shmup_state.spawn_cooldown = 2.0;
+
+        const enemy = &shmup_state.enemies[shmup_state.next_enemy];
+        enemy.*.is_alive = true;
+
+        enemy.*.area.x = rand_impl.random().float(f32) * 240.0;
+        enemy.*.area.y = 0.0;
+        enemy.*.area.radius = 10.0;
+
+        shmup_state.next_enemy += 1;
+        shmup_state.next_enemy &= MAX_ENEMIES - 1;
+    }
+
+    for (&shmup_state.enemies) |*enemy| {
+        if (enemy.is_alive) {
+            if (enemy.area.y <= 120.0) {
+                enemy.area.y += delta * 20.0;
+            }
+        }
+    }
 }
 
 pub fn draw() void {
@@ -98,6 +136,17 @@ pub fn draw() void {
                 @intFromFloat(bullet.area.y),
                 bullet.area.radius,
                 rl.Color.green,
+            );
+        }
+    }
+
+    for (shmup_state.enemies) |enemy| {
+        if (enemy.is_alive) {
+            rl.drawCircle(
+                @intFromFloat(enemy.area.x),
+                @intFromFloat(enemy.area.y),
+                enemy.area.radius,
+                rl.Color.red,
             );
         }
     }
