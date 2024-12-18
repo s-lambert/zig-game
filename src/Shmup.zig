@@ -19,6 +19,7 @@ const Bullet = struct {
     kind: BulletKind,
 };
 
+const SHOW_HITBOXES = false;
 const MAX_BULLETS = std.math.pow(usize, 4, 2);
 const MAX_ENEMIES = std.math.pow(usize, 4, 2);
 
@@ -39,9 +40,11 @@ var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 var rand_impl = std.rand.DefaultPrng.init(42);
 
 var player_spritesheet: rl.Texture2D = undefined;
+var bullet_spritesheet: rl.Texture2D = undefined;
 
 pub fn preload() void {
     player_spritesheet = utils.load_texture("./assets/bee.png");
+    bullet_spritesheet = utils.load_texture("./assets/bullets.png");
     shmup_state = .{
         .player = .{
             .position = Circle{ .x = 120.0, .y = 120.0, .radius = 8.0 },
@@ -141,12 +144,14 @@ pub fn update() !void {
 
 pub fn draw() void {
     const player = &shmup_state.player;
-    rl.drawCircle(
-        @intFromFloat(player.position.x),
-        @intFromFloat(player.position.y),
-        player.position.radius,
-        rl.Color.sky_blue,
-    );
+    if (SHOW_HITBOXES) {
+        rl.drawCircle(
+            @intFromFloat(player.position.x),
+            @intFromFloat(player.position.y),
+            player.position.radius,
+            rl.Color.sky_blue,
+        );
+    }
     player_spritesheet.drawPro(
         .{ .x = 0.0, .y = 0.0, .width = 16.0, .height = 16.0 },
         .{ .x = player.position.x, .y = player.position.y, .width = 16.0, .height = 16.0 },
@@ -157,11 +162,20 @@ pub fn draw() void {
 
     for (player.bullets) |bullet| {
         if (bullet.is_alive) {
-            rl.drawCircle(
-                @intFromFloat(bullet.area.x),
-                @intFromFloat(bullet.area.y),
-                bullet.area.radius,
-                rl.Color.green,
+            if (SHOW_HITBOXES) {
+                rl.drawCircle(
+                    @intFromFloat(bullet.area.x),
+                    @intFromFloat(bullet.area.y),
+                    bullet.area.radius,
+                    rl.Color.green,
+                );
+            }
+            bullet_spritesheet.drawPro(
+                .{ .x = 0.0, .y = 0.0, .width = 16.0, .height = 16.0 },
+                .{ .x = bullet.area.x, .y = bullet.area.y, .width = 16.0, .height = 16.0 },
+                .{ .x = 8.0, .y = 8.0 },
+                0.0,
+                rl.Color.white,
             );
         }
     }
