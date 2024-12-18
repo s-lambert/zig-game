@@ -1,10 +1,14 @@
 const std = @import("std");
 const rl = @import("raylib");
+const utils = @import("./utils.zig");
+const Hitbox = @import("./shmup/Hitbox.zig");
+const Circle = Hitbox.Circle;
+const circle_collision = Hitbox.circle_collision;
+const Enemy = @import("./shmup//Enemy.zig");
 
-const Circle = struct {
-    x: f32,
-    y: f32,
-    radius: f32,
+const BulletKind = enum {
+    Straight,
+    Wave,
 };
 
 const Bullet = struct {
@@ -12,15 +16,10 @@ const Bullet = struct {
     time_alive: f32,
     initial_x: f32,
     area: Circle,
+    kind: BulletKind,
 };
 
 const MAX_BULLETS = std.math.pow(usize, 4, 2);
-
-const Enemy = struct {
-    is_alive: bool,
-    area: Circle,
-};
-
 const MAX_ENEMIES = std.math.pow(usize, 4, 2);
 
 const ShmupState = struct {
@@ -39,7 +38,10 @@ var shmup_state: ShmupState = undefined;
 var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 var rand_impl = std.rand.DefaultPrng.init(42);
 
+var player_spritesheet: rl.Texture2D = undefined;
+
 pub fn preload() void {
+    player_spritesheet = utils.load_texture("./assets/bee.png");
     shmup_state = .{
         .player = .{
             .position = Circle{ .x = 120.0, .y = 120.0, .radius = 8.0 },
@@ -51,13 +53,6 @@ pub fn preload() void {
         .next_enemy = 0,
         .enemies = std.mem.zeroes([MAX_ENEMIES]Enemy),
     };
-}
-
-fn circle_collision(a: *Circle, b: *Circle) bool {
-    const dist_x = a.x - b.x;
-    const dist_y = a.y - b.y;
-    const distance = @sqrt(std.math.pow(f32, dist_x, 2) + std.math.pow(f32, dist_y, 2));
-    return distance <= (a.radius + b.radius);
 }
 
 pub fn update() !void {
@@ -80,13 +75,18 @@ pub fn update() !void {
         player.*.fire_cooldown -= delta;
     } else if (rl.isKeyDown(rl.KeyboardKey.key_space)) {
         player.*.fire_cooldown = 0.2;
+
         const bullet = &player.bullets[player.next_bullet];
+        std.debug.assert(!bullet.is_alive);
+
         bullet.*.is_alive = true;
         bullet.*.time_alive = 0.0;
         bullet.*.area.x = player.*.position.x;
         bullet.*.initial_x = bullet.*.area.x;
         bullet.*.area.y = player.*.position.y - player.*.position.radius;
         bullet.*.area.radius = 4.0;
+        bullet.*.kind = if (player.next_bullet < 8) BulletKind.Straight else BulletKind.Wave;
+
         player.*.next_bullet += 1;
         player.*.next_bullet &= MAX_BULLETS - 1;
     }
@@ -95,7 +95,9 @@ pub fn update() !void {
         if (bullet.is_alive) {
             bullet.*.time_alive += delta;
             bullet.area.y -= delta * 100.0;
-            bullet.area.x = bullet.initial_x + 20.0 * @sin(bullet.time_alive * 5.0);
+            if (bullet.kind == BulletKind.Wave) {
+                bullet.area.x = bullet.initial_x + 20.0 * @sin(bullet.time_alive * 5.0);
+            }
             if (bullet.area.y <= 0.0) {
                 bullet.is_alive = false;
             }
@@ -108,11 +110,14 @@ pub fn update() !void {
         shmup_state.spawn_cooldown = 2.0;
 
         const enemy = &shmup_state.enemies[shmup_state.next_enemy];
+        std.debug.assert(!enemy.is_alive);
         enemy.*.is_alive = true;
 
         enemy.*.area.x = rand_impl.random().float(f32) * 240.0;
         enemy.*.area.y = 0.0;
         enemy.*.area.radius = 10.0;
+        enemy.*.kind = Enemy.EnemyKind.Shooting;
+        enemy.*.update_func = Enemy.EnemyUpdateFunctions[@intFromEnum(enemy.kind)];
 
         shmup_state.next_enemy += 1;
         shmup_state.next_enemy &= MAX_ENEMIES - 1;
@@ -120,9 +125,7 @@ pub fn update() !void {
 
     for (&shmup_state.enemies) |*enemy| {
         if (enemy.is_alive) {
-            if (enemy.area.y <= 120.0) {
-                enemy.area.y += delta * 20.0;
-            }
+            enemy.update_func(enemy, delta);
 
             for (&player.bullets) |*bullet| {
                 if (bullet.is_alive) {
@@ -143,6 +146,13 @@ pub fn draw() void {
         @intFromFloat(player.position.y),
         player.position.radius,
         rl.Color.sky_blue,
+    );
+    player_spritesheet.drawPro(
+        .{ .x = 0.0, .y = 0.0, .width = 16.0, .height = 16.0 },
+        .{ .x = player.position.x, .y = player.position.y, .width = 16.0, .height = 16.0 },
+        .{ .x = 8.0, .y = 8.0 },
+        0.0,
+        rl.Color.white,
     );
 
     for (player.bullets) |bullet| {
