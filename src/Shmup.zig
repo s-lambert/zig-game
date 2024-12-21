@@ -4,6 +4,7 @@ const utils = @import("./utils.zig");
 const Hitbox = @import("./shmup/Hitbox.zig");
 const Circle = Hitbox.Circle;
 const circle_collision = Hitbox.circle_collision;
+const draw_hitbox = Hitbox.draw_hitbox;
 const Enemy = @import("./shmup//Enemy.zig");
 
 const BulletKind = enum {
@@ -199,12 +200,7 @@ pub fn draw() void {
 
     const player = &shmup_state.player;
     if (SHOW_HITBOXES) {
-        rl.drawCircle(
-            @intFromFloat(player.position.x),
-            @intFromFloat(player.position.y),
-            player.position.radius,
-            rl.Color.sky_blue,
-        );
+        draw_hitbox(&player.position, rl.Color.sky_blue);
     }
     ships_spritesheet.drawPro(
         .{ .x = 0.0, .y = 0.0, .width = 32.0, .height = 32.0 },
@@ -217,12 +213,7 @@ pub fn draw() void {
     for (player.bullets) |bullet| {
         if (bullet.is_alive) {
             if (SHOW_HITBOXES) {
-                rl.drawCircle(
-                    @intFromFloat(bullet.area.x),
-                    @intFromFloat(bullet.area.y),
-                    bullet.area.radius,
-                    rl.Color.green,
-                );
+                draw_hitbox(&bullet.area, rl.Color.green);
             }
             bullet_spritesheet.drawPro(
                 .{ .x = 0.0, .y = 0.0, .width = 16.0, .height = 16.0 },
@@ -237,12 +228,7 @@ pub fn draw() void {
     for (shmup_state.enemies) |enemy| {
         if (enemy.is_alive) {
             if (SHOW_HITBOXES) {
-                rl.drawCircle(
-                    @intFromFloat(enemy.area.x),
-                    @intFromFloat(enemy.area.y),
-                    enemy.area.radius,
-                    rl.Color.red,
-                );
+                draw_hitbox(&enemy.area, rl.Color.yellow);
             }
             ships_spritesheet.drawPro(
                 .{ .x = 0.0, .y = 128.0, .width = 32.0, .height = 32.0 },
@@ -257,12 +243,7 @@ pub fn draw() void {
     for (shmup_state.enemy_bullets) |enemy_bullet| {
         if (enemy_bullet.is_alive) {
             if (SHOW_HITBOXES) {
-                rl.drawCircle(
-                    @intFromFloat(enemy_bullet.area.x),
-                    @intFromFloat(enemy_bullet.area.y),
-                    enemy_bullet.area.radius,
-                    rl.Color.green,
-                );
+                draw_hitbox(&enemy_bullet.area, rl.Color.red);
             }
             bullet_spritesheet.drawPro(
                 .{ .x = 0.0, .y = 0.0, .width = 16.0, .height = 16.0 },
