@@ -41,10 +41,13 @@ var rand_impl = std.rand.DefaultPrng.init(42);
 
 var player_spritesheet: rl.Texture2D = undefined;
 var bullet_spritesheet: rl.Texture2D = undefined;
+var background_spritesheet: rl.Texture2D = undefined;
 
 pub fn preload() void {
     player_spritesheet = utils.load_texture("./assets/bee.png");
     bullet_spritesheet = utils.load_texture("./assets/bullets.png");
+    background_spritesheet = utils.load_texture("./assets/1st map.png");
+
     shmup_state = .{
         .player = .{
             .position = Circle{ .x = 120.0, .y = 120.0, .radius = 8.0 },
@@ -143,6 +146,15 @@ pub fn update() !void {
 }
 
 pub fn draw() void {
+    rl.drawTexturePro(
+        background_spritesheet,
+        .{ .x = 0.0, .y = 0.0, .width = 16.0 * 16.0, .height = 16.0 * 20.0 },
+        .{ .x = 0.0, .y = 0.0, .width = 16.0 * 16.0, .height = 16.0 * 20.0 },
+        .{ .x = 0.0, .y = 0.0 },
+        0.0,
+        rl.Color.white,
+    );
+
     const player = &shmup_state.player;
     if (SHOW_HITBOXES) {
         rl.drawCircle(

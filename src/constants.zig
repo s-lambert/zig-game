@@ -5,8 +5,8 @@ pub const tile_size = 16;
 pub const tile_size_f = 16.0;
 pub const tiles_width = 10;
 pub const tiles_height = 8;
-pub const window_height = 64 * tiles_height;
-pub const window_width = 48 * tiles_width;
+pub const window_height = 40 * tile_size;
+pub const window_width = 32 * tile_size;
 
 pub fn tile_pos(x: usize, y: usize) rl.Vector2 {
     return .{
