@@ -19,7 +19,7 @@ const Bullet = struct {
     kind: BulletKind,
 };
 
-const SHOW_HITBOXES = false;
+const SHOW_HITBOXES = true;
 const MAX_BULLETS = std.math.pow(usize, 4, 2);
 const MAX_ENEMIES = std.math.pow(usize, 4, 2);
 
@@ -39,13 +39,13 @@ var shmup_state: ShmupState = undefined;
 var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 var rand_impl = std.rand.DefaultPrng.init(42);
 
-var player_spritesheet: rl.Texture2D = undefined;
 var bullet_spritesheet: rl.Texture2D = undefined;
+var ships_spritesheet: rl.Texture2D = undefined;
 var background_spritesheet: rl.Texture2D = undefined;
 
 pub fn preload() void {
-    player_spritesheet = utils.load_texture("./assets/bee.png");
     bullet_spritesheet = utils.load_texture("./assets/bullets.png");
+    ships_spritesheet = utils.load_texture("./assets/ships_packed.png");
     background_spritesheet = utils.load_texture("./assets/1st map.png");
 
     shmup_state = .{
@@ -164,8 +164,8 @@ pub fn draw() void {
             rl.Color.sky_blue,
         );
     }
-    player_spritesheet.drawPro(
-        .{ .x = 0.0, .y = 0.0, .width = 16.0, .height = 16.0 },
+    ships_spritesheet.drawPro(
+        .{ .x = 0.0, .y = 0.0, .width = 32.0, .height = 32.0 },
         .{ .x = player.position.x, .y = player.position.y, .width = 16.0, .height = 16.0 },
         .{ .x = 8.0, .y = 8.0 },
         0.0,
@@ -194,11 +194,20 @@ pub fn draw() void {
 
     for (shmup_state.enemies) |enemy| {
         if (enemy.is_alive) {
-            rl.drawCircle(
-                @intFromFloat(enemy.area.x),
-                @intFromFloat(enemy.area.y),
-                enemy.area.radius,
-                rl.Color.red,
+            if (SHOW_HITBOXES) {
+                rl.drawCircle(
+                    @intFromFloat(enemy.area.x),
+                    @intFromFloat(enemy.area.y),
+                    enemy.area.radius,
+                    rl.Color.red,
+                );
+            }
+            ships_spritesheet.drawPro(
+                .{ .x = 0.0, .y = 128.0, .width = 32.0, .height = 32.0 },
+                .{ .x = enemy.area.x, .y = enemy.area.y, .width = 32.0, .height = 32.0 },
+                .{ .x = 16.0, .y = 16.0 },
+                180.0,
+                rl.Color.white,
             );
         }
     }
