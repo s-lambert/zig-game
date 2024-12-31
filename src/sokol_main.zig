@@ -51,8 +51,8 @@ export fn init() void {
 
     state.bind.images[0] = state.img;
     state.bind.samplers[1] = sg.makeSampler(.{
-        .min_filter = .LINEAR,
-        .mag_filter = .LINEAR,
+        .min_filter = .NEAREST,
+        .mag_filter = .NEAREST,
         .wrap_u = .CLAMP_TO_EDGE,
         .wrap_v = .CLAMP_TO_EDGE,
     });
@@ -72,14 +72,19 @@ export fn frame() void {
     sg.applyBindings(state.bind);
 
     state.vs_params.sprite_rect = .{
-        64.0 / 256.0, // x
-        96.0 / 256.0, // y
-        32.0 / 256.0, // z
+        0.0 / 256.0, // x
+        0.0 / 320.0, // y
         32.0 / 256.0, // w
+        32.0 / 320.0, // h
     };
+    state.vs_params.screen_size = .{
+        800.0, // screen width
+        600.0, // screen height
+    };
+
     sg.applyUniforms(2, sg.asRange(&state.vs_params));
 
-    sg.draw(0, 3, 1);
+    sg.draw(0, 6, 1);
     sg.endPass();
     sg.commit();
 }
