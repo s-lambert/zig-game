@@ -6,19 +6,7 @@ const Circle = Hitbox.Circle;
 const circle_collision = Hitbox.circle_collision;
 const draw_hitbox = Hitbox.draw_hitbox;
 const Enemy = @import("./shmup//Enemy.zig");
-
-const BulletKind = enum {
-    Straight,
-    Wave,
-};
-
-const Bullet = struct {
-    is_alive: bool,
-    time_alive: f32,
-    initial_x: f32,
-    area: Circle,
-    kind: BulletKind,
-};
+const Bullet = @import("./shmup/Bullet.zig");
 
 const SHOW_HITBOXES = true;
 const MAX_BULLETS = std.math.pow(usize, 4, 2);
@@ -93,11 +81,11 @@ pub fn update() !void {
 
         bullet.*.is_alive = true;
         bullet.*.time_alive = 0.0;
-        bullet.*.area.x = player.*.position.x;
-        bullet.*.initial_x = bullet.*.area.x;
-        bullet.*.area.y = player.*.position.y - player.*.position.radius;
+        bullet.*.area.x = player.position.x;
+        bullet.*.initial_x = player.position.x;
+        bullet.*.area.y = player.position.y - player.position.radius;
         bullet.*.area.radius = 4.0;
-        bullet.*.kind = if (player.next_bullet < 8) BulletKind.Straight else BulletKind.Wave;
+        bullet.*.kind = if (player.next_bullet < 8) Bullet.BulletKind.Straight else Bullet.BulletKind.Wave;
 
         player.*.next_bullet += 1;
         player.*.next_bullet &= MAX_BULLETS - 1;
@@ -107,7 +95,7 @@ pub fn update() !void {
         if (bullet.is_alive) {
             bullet.*.time_alive += delta;
             bullet.area.y -= delta * 100.0;
-            if (bullet.kind == BulletKind.Wave) {
+            if (bullet.kind == Bullet.BulletKind.Wave) {
                 bullet.area.x = bullet.initial_x + 20.0 * @sin(bullet.time_alive * 5.0);
             }
             if (bullet.area.y <= 0.0) {
@@ -120,7 +108,7 @@ pub fn update() !void {
         if (enemy_bullet.is_alive) {
             enemy_bullet.*.time_alive += delta;
             enemy_bullet.area.y += delta * 100.0;
-            if (enemy_bullet.kind == BulletKind.Wave) {
+            if (enemy_bullet.kind == Bullet.BulletKind.Wave) {
                 enemy_bullet.area.x = enemy_bullet.initial_x + 20.0 * @sin(enemy_bullet.time_alive * 5.0);
             }
             if (enemy_bullet.area.y <= 0.0) {
@@ -182,7 +170,7 @@ fn fire_enemy_bullet(enemy: *Enemy) void {
     bullet.*.initial_x = bullet.*.area.x;
     bullet.*.area.y = enemy.*.area.y - enemy.*.area.radius;
     bullet.*.area.radius = 4.0;
-    bullet.*.kind = BulletKind.Straight;
+    bullet.*.kind = Bullet.BulletKind.Straight;
 
     shmup_state.next_bullet += 1;
     shmup_state.next_bullet &= MAX_ENEMY_BULLETS - 1;
