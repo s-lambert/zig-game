@@ -1,9 +1,11 @@
+const std = @import("std");
 const sokol = @import("sokol");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
 const sglue = sokol.glue;
 const sshape = sokol.shape;
+const zstbi = @import("zstbi");
 const vec3 = @import("math.zig").Vec3;
 const mat4 = @import("math.zig").Mat4;
 const assert = @import("std").debug.assert;
@@ -14,7 +16,11 @@ const state = struct {
     var pip: sg.Pipeline = .{};
     var bind: sg.Bindings = .{};
     var vs_params: shd.VsParams = undefined;
+    var stbi_img: zstbi.Image = undefined;
+    var img: sg.Image = .{};
 };
+
+var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
 export fn init() void {
     sg.setup(.{
@@ -27,37 +33,34 @@ export fn init() void {
         .clear_value = .{ .r = 0, .g = 0, .a = 1 },
     };
 
-    // Create vertex buffer
-    const vertices = [_]f32{
-        -1.0, -1.0,
-        1.0,  -1.0,
-        -1.0, 1.0,
-        1.0,  1.0,
-    };
+    zstbi.init(arena_allocator.allocator());
 
-    // Create index buffer
-    const indices = [_]u16{
-        0, 1, 2, // First triangle
-        1, 3, 2, // Second triangle
-    };
+    state.stbi_img = zstbi.Image.loadFromFile("src/assets/1st map.png", 4) catch unreachable;
 
-    state.bind.vertex_buffers[0] = sg.makeBuffer(.{
-        .data = sg.asRange(&vertices),
-    });
+    var sub_image: [6][16]sg.Range = std.mem.zeroes([6][16]sg.Range);
+    sub_image[0][0] = sg.asRange(state.stbi_img.data);
+    state.img = sg.makeImage(
+        .{
+            .width = @intCast(state.stbi_img.width),
+            .height = @intCast(state.stbi_img.height),
+            .data = .{
+                .subimage = sub_image,
+            },
+        },
+    );
 
-    state.bind.index_buffer = sg.makeBuffer(.{
-        .type = .INDEXBUFFER,
-        .data = sg.asRange(&indices),
+    state.bind.images[0] = state.img;
+    state.bind.samplers[1] = sg.makeSampler(.{
+        .min_filter = .LINEAR,
+        .mag_filter = .LINEAR,
+        .wrap_u = .CLAMP_TO_EDGE,
+        .wrap_v = .CLAMP_TO_EDGE,
     });
 
     const pip_desc: sg.PipelineDesc = .{
         .shader = sg.makeShader(shd.blankShaderDesc(sg.queryBackend())),
-        .index_type = .UINT16,
+        .primitive_type = .TRIANGLES,
         .cull_mode = .NONE,
-        .depth = .{
-            .compare = .LESS_EQUAL,
-            .write_enabled = true,
-        },
     };
 
     state.pip = sg.makePipeline(pip_desc);
@@ -67,6 +70,15 @@ export fn frame() void {
     sg.beginPass(.{ .action = state.pass_action, .swapchain = sglue.swapchain() });
     sg.applyPipeline(state.pip);
     sg.applyBindings(state.bind);
+
+    state.vs_params.sprite_rect = .{
+        64.0 / 256.0, // x
+        96.0 / 256.0, // y
+        32.0 / 256.0, // z
+        32.0 / 256.0, // w
+    };
+    sg.applyUniforms(2, sg.asRange(&state.vs_params));
+
     sg.draw(0, 3, 1);
     sg.endPass();
     sg.commit();
@@ -78,6 +90,8 @@ export fn input(event: ?*const sapp.Event) void {
 
 export fn cleanup() void {
     sg.shutdown();
+    state.stbi_img.deinit();
+    zstbi.deinit();
 }
 
 pub fn main() void {

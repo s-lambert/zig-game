@@ -79,7 +79,13 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .root_source_file = b.path("src/sokol_main.zig"),
     });
+    const dep_zstbi = b.dependency("zstbi", .{
+        .target = target,
+        .optimize = optimize,
+    });
     hello.root_module.addImport("sokol", dep_sokol.module("sokol"));
+    hello.root_module.addImport("zstbi", dep_zstbi.module("root"));
+    hello.linkLibrary(dep_zstbi.artifact("zstbi"));
     b.installArtifact(hello);
     const run = b.addRunArtifact(hello);
     b.step("sokol", "Run hello").dependOn(&run.step);
