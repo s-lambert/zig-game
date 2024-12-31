@@ -50,7 +50,7 @@ export fn init() void {
         .data = sg.asRange(&indices),
     });
 
-    var pip_desc: sg.PipelineDesc = .{
+    const pip_desc: sg.PipelineDesc = .{
         .shader = sg.makeShader(shd.blankShaderDesc(sg.queryBackend())),
         .index_type = .UINT16,
         .cull_mode = .NONE,
@@ -58,12 +58,6 @@ export fn init() void {
             .compare = .LESS_EQUAL,
             .write_enabled = true,
         },
-    }; // Define our own vertex layout
-    pip_desc.layout.buffers[0].stride = 8; // 2 floats * 4 bytes
-    pip_desc.layout.attrs[0] = .{
-        .format = .FLOAT2,
-        .buffer_index = 0,
-        .offset = 0,
     };
 
     state.pip = sg.makePipeline(pip_desc);
@@ -73,7 +67,7 @@ export fn frame() void {
     sg.beginPass(.{ .action = state.pass_action, .swapchain = sglue.swapchain() });
     sg.applyPipeline(state.pip);
     sg.applyBindings(state.bind);
-    sg.draw(0, 6, 1);
+    sg.draw(0, 3, 1);
     sg.endPass();
     sg.commit();
 }
