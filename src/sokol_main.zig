@@ -11,6 +11,9 @@ const mat4 = @import("math.zig").Mat4;
 const assert = @import("std").debug.assert;
 const shd = @import("shaders/blank.glsl.zig");
 
+const sprite_size = 16.0;
+const render_scale = 4.0;
+
 const Vertex = struct {
     pos: [2]f32, // x, y position
     uv: [2]f32, // texture coordinates
@@ -34,7 +37,7 @@ const Sprite = struct {
     texture: Texture,
 };
 
-const MAX_SPRITES = 1000;
+const MAX_SPRITES = 10000;
 
 const state = struct {
     var pass_action: sg.PassAction = .{};
@@ -170,38 +173,38 @@ export fn frame() void {
     sg.applyUniforms(0, sg.asRange(&state.vs_params));
 
     const single_sprite: Sprite = .{
-        .x = 0.0,
-        .y = 0.0,
-        .width = 16.0,
-        .height = 16.0,
-        .uv_x = 0.0,
-        .uv_y = 0.0,
-        .uv_width = 16.0 / 256.0,
-        .uv_height = 16.0 / 320.0,
+        .x = 0.0 * sprite_size,
+        .y = 0.0 * sprite_size,
+        .width = sprite_size,
+        .height = sprite_size,
+        .uv_x = (0.0 * sprite_size) / 256.0,
+        .uv_y = (0.0 * sprite_size) / 320.0,
+        .uv_width = sprite_size / 256.0,
+        .uv_height = sprite_size / 320.0,
         .texture = .TILE,
     };
 
     const another_sprite: Sprite = .{
-        .x = 16.0,
-        .y = 16.0,
-        .width = 16.0,
-        .height = 16.0,
-        .uv_x = 16.0 / 256.0,
-        .uv_y = 176.0 / 320.0,
-        .uv_width = 16.0 / 256.0,
-        .uv_height = 16.0 / 320.0,
+        .x = 13.0 * sprite_size,
+        .y = 9.0 * sprite_size,
+        .width = sprite_size,
+        .height = sprite_size,
+        .uv_x = (1.0 * sprite_size) / 256.0,
+        .uv_y = (11.0 * sprite_size) / 320.0,
+        .uv_width = sprite_size / 256.0,
+        .uv_height = sprite_size / 320.0,
         .texture = .TILE,
     };
 
     const player_sprite: Sprite = .{
-        .x = 16.0,
-        .y = 16.0,
-        .width = 16.0,
-        .height = 16.0,
-        .uv_x = 16.0 / 80.0,
-        .uv_y = 0.0,
-        .uv_width = 16.0 / 80.0,
-        .uv_height = 16.0 / 16.0,
+        .x = 13.0 * sprite_size,
+        .y = 9.0 * sprite_size,
+        .width = sprite_size,
+        .height = sprite_size,
+        .uv_x = (1.0 * sprite_size) / 80.0,
+        .uv_y = (0.0 * sprite_size) / 16.0,
+        .uv_width = sprite_size / 80.0,
+        .uv_height = sprite_size / 16.0,
         .texture = .PLAYER,
     };
 
@@ -248,6 +251,7 @@ export fn frame() void {
 
     sg.updateBuffer(state.bind.vertex_buffers[0], sg.asRange(vertex_data[0..vertex_count]));
 
+    // Draw 6 vertexes for each sprite, 6 vertexes is 1 quad
     sg.draw(0, @intCast(sprites.len * 6), 1);
     sg.endPass();
     sg.commit();
@@ -270,8 +274,8 @@ pub fn main() void {
         .frame_cb = frame,
         .event_cb = input,
         .cleanup_cb = cleanup,
-        .width = 800,
-        .height = 600,
+        .width = 14 * sprite_size * render_scale,
+        .height = 10 * sprite_size * render_scale,
         .sample_count = 1,
         .icon = .{ .sokol_default = true },
         .window_title = "blank.zig",
