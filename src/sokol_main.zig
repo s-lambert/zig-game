@@ -94,7 +94,7 @@ export fn init() void {
     );
 
     state.bind.images[0] = state.img;
-    state.bind.samplers[1] = sg.makeSampler(.{
+    state.bind.samplers[0] = sg.makeSampler(.{
         .min_filter = .NEAREST,
         .mag_filter = .NEAREST,
         .wrap_u = .CLAMP_TO_EDGE,
@@ -130,7 +130,7 @@ export fn frame() void {
         800.0, // screen width
         600.0, // screen height
     };
-    sg.applyUniforms(2, sg.asRange(&state.vs_params));
+    sg.applyUniforms(0, sg.asRange(&state.vs_params));
 
     const single_sprite: Sprite = .{
         .x = 0.0,

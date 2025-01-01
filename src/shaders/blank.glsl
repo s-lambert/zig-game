@@ -1,5 +1,5 @@
 @vs vs
-layout(binding=2) uniform vs_params {
+layout(binding=0) uniform vs_params {
     vec2 screen_size;
 };
 
@@ -19,7 +19,7 @@ void main() {
 
 @fs fs
 layout(binding=0) uniform texture2D sprite_texture;
-layout(binding=1) uniform sampler sprite_sampler;
+layout(binding=0) uniform sampler sprite_sampler;
 
 in vec2 v_texcoord;
 out vec4 frag_color;

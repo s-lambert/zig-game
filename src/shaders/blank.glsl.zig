@@ -20,7 +20,7 @@ const std = @import("std");
 //    Bindings:
 //        Uniform block 'vs_params':
 //            Zig struct: VsParams
-//            Bind slot: UB_vs_params => 2
+//            Bind slot: UB_vs_params => 0
 //        Image 'sprite_texture':
 //            Image type: ._2D
 //            Sample type: .FLOAT
@@ -28,16 +28,16 @@ const std = @import("std");
 //            Bind slot: IMG_sprite_texture => 0
 //        Sampler 'sprite_sampler':
 //            Type: .FILTERING
-//            Bind slot: SMP_sprite_sampler => 1
+//            Bind slot: SMP_sprite_sampler => 0
 //        Image Sampler Pair 'sprite_texture_sprite_sampler':
 //            Image: sprite_texture
 //            Sampler: sprite_sampler
 //
 pub const ATTR_blank_position = 0;
 pub const ATTR_blank_texcoord = 1;
-pub const UB_vs_params = 2;
+pub const UB_vs_params = 0;
 pub const IMG_sprite_texture = 0;
-pub const SMP_sprite_sampler = 1;
+pub const SMP_sprite_sampler = 0;
 pub const VsParams = extern struct {
     screen_size: [2]f32 align(16),
     _pad_8: [8]u8 align(1) = undefined,
@@ -677,21 +677,21 @@ pub fn blankShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.fragment_func.entry = "main";
             desc.attrs[0].glsl_name = "position";
             desc.attrs[1].glsl_name = "texcoord";
-            desc.uniform_blocks[2].stage = .VERTEX;
-            desc.uniform_blocks[2].layout = .STD140;
-            desc.uniform_blocks[2].size = 16;
-            desc.uniform_blocks[2].glsl_uniforms[0].type = .FLOAT4;
-            desc.uniform_blocks[2].glsl_uniforms[0].array_count = 1;
-            desc.uniform_blocks[2].glsl_uniforms[0].glsl_name = "vs_params";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 16;
+            desc.uniform_blocks[0].glsl_uniforms[0].type = .FLOAT4;
+            desc.uniform_blocks[0].glsl_uniforms[0].array_count = 1;
+            desc.uniform_blocks[0].glsl_uniforms[0].glsl_name = "vs_params";
             desc.images[0].stage = .FRAGMENT;
             desc.images[0].multisampled = false;
             desc.images[0].image_type = ._2D;
             desc.images[0].sample_type = .FLOAT;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
             desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[0].glsl_name = "sprite_texture_sprite_sampler";
         },
         .GLES3 => {
@@ -701,21 +701,21 @@ pub fn blankShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.fragment_func.entry = "main";
             desc.attrs[0].glsl_name = "position";
             desc.attrs[1].glsl_name = "texcoord";
-            desc.uniform_blocks[2].stage = .VERTEX;
-            desc.uniform_blocks[2].layout = .STD140;
-            desc.uniform_blocks[2].size = 16;
-            desc.uniform_blocks[2].glsl_uniforms[0].type = .FLOAT4;
-            desc.uniform_blocks[2].glsl_uniforms[0].array_count = 1;
-            desc.uniform_blocks[2].glsl_uniforms[0].glsl_name = "vs_params";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 16;
+            desc.uniform_blocks[0].glsl_uniforms[0].type = .FLOAT4;
+            desc.uniform_blocks[0].glsl_uniforms[0].array_count = 1;
+            desc.uniform_blocks[0].glsl_uniforms[0].glsl_name = "vs_params";
             desc.images[0].stage = .FRAGMENT;
             desc.images[0].multisampled = false;
             desc.images[0].image_type = ._2D;
             desc.images[0].sample_type = .FLOAT;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
             desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[0].glsl_name = "sprite_texture_sprite_sampler";
         },
         .D3D11 => {
@@ -729,63 +729,63 @@ pub fn blankShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.attrs[0].hlsl_sem_index = 0;
             desc.attrs[1].hlsl_sem_name = "TEXCOORD";
             desc.attrs[1].hlsl_sem_index = 1;
-            desc.uniform_blocks[2].stage = .VERTEX;
-            desc.uniform_blocks[2].layout = .STD140;
-            desc.uniform_blocks[2].size = 16;
-            desc.uniform_blocks[2].hlsl_register_b_n = 0;
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 16;
+            desc.uniform_blocks[0].hlsl_register_b_n = 0;
             desc.images[0].stage = .FRAGMENT;
             desc.images[0].multisampled = false;
             desc.images[0].image_type = ._2D;
             desc.images[0].sample_type = .FLOAT;
             desc.images[0].hlsl_register_t_n = 0;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].hlsl_register_s_n = 0;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].hlsl_register_s_n = 0;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
             desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         .METAL_MACOS => {
             desc.vertex_func.source = &vs_source_metal_macos;
             desc.vertex_func.entry = "main0";
             desc.fragment_func.source = &fs_source_metal_macos;
             desc.fragment_func.entry = "main0";
-            desc.uniform_blocks[2].stage = .VERTEX;
-            desc.uniform_blocks[2].layout = .STD140;
-            desc.uniform_blocks[2].size = 16;
-            desc.uniform_blocks[2].msl_buffer_n = 0;
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 16;
+            desc.uniform_blocks[0].msl_buffer_n = 0;
             desc.images[0].stage = .FRAGMENT;
             desc.images[0].multisampled = false;
             desc.images[0].image_type = ._2D;
             desc.images[0].sample_type = .FLOAT;
             desc.images[0].msl_texture_n = 0;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].msl_sampler_n = 0;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].msl_sampler_n = 0;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
             desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         .WGPU => {
             desc.vertex_func.source = &vs_source_wgsl;
             desc.vertex_func.entry = "main";
             desc.fragment_func.source = &fs_source_wgsl;
             desc.fragment_func.entry = "main";
-            desc.uniform_blocks[2].stage = .VERTEX;
-            desc.uniform_blocks[2].layout = .STD140;
-            desc.uniform_blocks[2].size = 16;
-            desc.uniform_blocks[2].wgsl_group0_binding_n = 0;
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 16;
+            desc.uniform_blocks[0].wgsl_group0_binding_n = 0;
             desc.images[0].stage = .FRAGMENT;
             desc.images[0].multisampled = false;
             desc.images[0].image_type = ._2D;
             desc.images[0].sample_type = .FLOAT;
             desc.images[0].wgsl_group1_binding_n = 64;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].wgsl_group1_binding_n = 80;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].wgsl_group1_binding_n = 80;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
             desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         else => {},
     }
@@ -808,13 +808,13 @@ pub fn blankImageSlot(img_name: []const u8) ?usize {
 }
 pub fn blankSamplerSlot(smp_name: []const u8) ?usize {
     if (std.mem.eql(u8, smp_name, "sprite_sampler")) {
-        return 1;
+        return 0;
     }
     return null;
 }
 pub fn blankUniformblockSlot(ub_name: []const u8) ?usize {
     if (std.mem.eql(u8, ub_name, "vs_params")) {
-        return 2;
+        return 0;
     }
     return null;
 }
