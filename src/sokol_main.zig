@@ -17,7 +17,7 @@ const Vertex = struct {
     tex_idx: u32,
 };
 
-const Spritesheet = enum {
+const Texture = enum {
     TILE,
     PLAYER,
 };
@@ -31,7 +31,7 @@ const Sprite = struct {
     uv_y: f32,
     uv_width: f32,
     uv_height: f32,
-    spritesheet: Spritesheet,
+    texture: Texture,
 };
 
 const MAX_SPRITES = 1000;
@@ -164,8 +164,8 @@ export fn frame() void {
     sg.applyBindings(state.bind);
 
     state.vs_params.screen_size = .{
-        800.0, // screen width
-        600.0, // screen height
+        @floatFromInt(sapp.width()), // screen width
+        @floatFromInt(sapp.height()), // screen height
     };
     sg.applyUniforms(0, sg.asRange(&state.vs_params));
 
@@ -178,7 +178,7 @@ export fn frame() void {
         .uv_y = 0.0,
         .uv_width = 16.0 / 256.0,
         .uv_height = 16.0 / 320.0,
-        .spritesheet = .TILE,
+        .texture = .TILE,
     };
 
     const another_sprite: Sprite = .{
@@ -190,7 +190,7 @@ export fn frame() void {
         .uv_y = 176.0 / 320.0,
         .uv_width = 16.0 / 256.0,
         .uv_height = 16.0 / 320.0,
-        .spritesheet = .TILE,
+        .texture = .TILE,
     };
 
     const player_sprite: Sprite = .{
@@ -202,7 +202,7 @@ export fn frame() void {
         .uv_y = 0.0,
         .uv_width = 16.0 / 80.0,
         .uv_height = 16.0 / 16.0,
-        .spritesheet = .PLAYER,
+        .texture = .PLAYER,
     };
 
     var vertex_data: [MAX_SPRITES * 4]Vertex = std.mem.zeroes([MAX_SPRITES * 4]Vertex);
@@ -210,16 +210,17 @@ export fn frame() void {
 
     const sprites = [_]Sprite{ single_sprite, another_sprite, player_sprite };
 
+    const scale = 4.0;
     for (sprites) |sprite| {
-        const x = sprite.x;
-        const y = sprite.y;
-        const w = sprite.width;
-        const h = sprite.height;
+        const x = sprite.x * scale;
+        const y = sprite.y * scale;
+        const w = sprite.width * scale;
+        const h = sprite.height * scale;
         const u = sprite.uv_x;
         const v = sprite.uv_y;
         const uw = sprite.uv_width;
         const vh = sprite.uv_height;
-        const tex_idx = @intFromEnum(sprite.spritesheet);
+        const tex_idx = @intFromEnum(sprite.texture);
 
         vertex_data[vertex_count + 0] = .{
             .pos = .{ x, y + h },
@@ -271,7 +272,7 @@ pub fn main() void {
         .cleanup_cb = cleanup,
         .width = 800,
         .height = 600,
-        .sample_count = 4,
+        .sample_count = 1,
         .icon = .{ .sokol_default = true },
         .window_title = "blank.zig",
         .logger = .{ .func = slog.func },
