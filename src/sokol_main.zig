@@ -14,7 +14,20 @@ const shd = @import("shaders/blank.glsl.zig");
 const sprite_size = 16.0;
 const render_scale = 4.0;
 
-const Vertex = struct {
+const Position = struct { x: usize, y: usize };
+
+const GameState = struct {
+    player_position: Position,
+    timing: struct {
+        tick: u32 = 0,
+        tick_accum: i32 = 0,
+    } = .{},
+};
+var game_state: GameState = .{
+    .player_position = .{ .x = 13, .y = 0 },
+};
+
+const QuadVertex = struct {
     pos: [2]f32, // x, y position
     uv: [2]f32, // texture coordinates
     tex_idx: u32,
@@ -39,7 +52,7 @@ const Sprite = struct {
 
 const MAX_SPRITES = 10000;
 
-const state = struct {
+const render_state = struct {
     var pass_action: sg.PassAction = .{};
     var pip: sg.Pipeline = .{};
     var bind: sg.Bindings = .{};
@@ -58,13 +71,13 @@ export fn init() void {
         .logger = .{ .func = slog.func },
     });
 
-    state.pass_action.colors[0] = .{
+    render_state.pass_action.colors[0] = .{
         .load_action = .CLEAR,
         .clear_value = .{ .r = 0, .g = 0, .a = 1 },
     };
 
-    state.bind.vertex_buffers[0] = sg.makeBuffer(.{
-        .size = @sizeOf(Vertex) * MAX_SPRITES * 4,
+    render_state.bind.vertex_buffers[0] = sg.makeBuffer(.{
+        .size = @sizeOf(QuadVertex) * MAX_SPRITES * 4,
         .usage = .DYNAMIC,
     });
 
@@ -84,40 +97,40 @@ export fn init() void {
         indices[index_index + 5] = @as(u16, @intCast(vertex_index)) + 2;
     }
 
-    state.bind.index_buffer = sg.makeBuffer(.{
+    render_state.bind.index_buffer = sg.makeBuffer(.{
         .data = sg.asRange(&indices),
         .type = .INDEXBUFFER,
     });
 
     zstbi.init(arena_allocator.allocator());
 
-    state.stbi_img = zstbi.Image.loadFromFile("src/assets/1st map.png", 4) catch unreachable;
+    render_state.stbi_img = zstbi.Image.loadFromFile("src/assets/1st map.png", 4) catch unreachable;
     var tile_image: [6][16]sg.Range = std.mem.zeroes([6][16]sg.Range);
-    tile_image[0][0] = sg.asRange(state.stbi_img.data);
-    state.img = sg.makeImage(
+    tile_image[0][0] = sg.asRange(render_state.stbi_img.data);
+    render_state.img = sg.makeImage(
         .{
-            .width = @intCast(state.stbi_img.width),
-            .height = @intCast(state.stbi_img.height),
+            .width = @intCast(render_state.stbi_img.width),
+            .height = @intCast(render_state.stbi_img.height),
             .data = .{
                 .subimage = tile_image,
             },
         },
     );
 
-    state.stbi_img_2 = zstbi.Image.loadFromFile("src/assets/daoist.png", 4) catch unreachable;
+    render_state.stbi_img_2 = zstbi.Image.loadFromFile("src/assets/daoist.png", 4) catch unreachable;
     var player_image: [6][16]sg.Range = std.mem.zeroes([6][16]sg.Range);
-    player_image[0][0] = sg.asRange(state.stbi_img_2.data);
-    state.img_2 = sg.makeImage(
+    player_image[0][0] = sg.asRange(render_state.stbi_img_2.data);
+    render_state.img_2 = sg.makeImage(
         .{
-            .width = @intCast(state.stbi_img_2.width),
-            .height = @intCast(state.stbi_img_2.height),
+            .width = @intCast(render_state.stbi_img_2.width),
+            .height = @intCast(render_state.stbi_img_2.height),
             .data = .{ .subimage = player_image },
         },
     );
 
-    state.bind.images[0] = state.img;
-    state.bind.images[1] = state.img_2;
-    state.bind.samplers[0] = sg.makeSampler(.{
+    render_state.bind.images[0] = render_state.img;
+    render_state.bind.images[1] = render_state.img_2;
+    render_state.bind.samplers[0] = sg.makeSampler(.{
         .min_filter = .NEAREST,
         .mag_filter = .NEAREST,
         .wrap_u = .CLAMP_TO_EDGE,
@@ -144,33 +157,54 @@ export fn init() void {
     };
     pip_desc.colors[0] = .{ .blend = blend_state };
 
-    pip_desc.layout.buffers[0].stride = @sizeOf(Vertex);
+    pip_desc.layout.buffers[0].stride = @sizeOf(QuadVertex);
     pip_desc.layout.attrs[shd.ATTR_blank_position] = .{
         .format = .FLOAT2,
-        .offset = @offsetOf(Vertex, "pos"),
+        .offset = @offsetOf(QuadVertex, "pos"),
     };
     pip_desc.layout.attrs[shd.ATTR_blank_texcoord] = .{
         .format = .FLOAT2,
-        .offset = @offsetOf(Vertex, "uv"),
+        .offset = @offsetOf(QuadVertex, "uv"),
     };
     pip_desc.layout.attrs[shd.ATTR_blank_texture_index] = .{
         .format = .UBYTE4,
-        .offset = @offsetOf(Vertex, "tex_idx"),
+        .offset = @offsetOf(QuadVertex, "tex_idx"),
     };
 
-    state.pip = sg.makePipeline(pip_desc);
+    render_state.pip = sg.makePipeline(pip_desc);
 }
 
-export fn frame() void {
-    sg.beginPass(.{ .action = state.pass_action, .swapchain = sglue.swapchain() });
-    sg.applyPipeline(state.pip);
-    sg.applyBindings(state.bind);
+const MAX_FRAME_TIME_NS = 33_333_333.0;
+const TICK_TOLERANCE_NS = 1_000_000;
+const TICK_DURATION_NS = 16_666_666;
 
-    state.vs_params.screen_size = .{
+export fn frame() void {
+    var frame_time_ns = @as(f32, @floatCast(sapp.frameDuration() * 1000000000.0));
+    if (frame_time_ns > MAX_FRAME_TIME_NS) {
+        frame_time_ns = MAX_FRAME_TIME_NS;
+    }
+
+    game_state.timing.tick_accum += @as(i32, @intFromFloat(frame_time_ns));
+    while (game_state.timing.tick_accum > -TICK_TOLERANCE_NS) {
+        game_state.timing.tick_accum -= TICK_DURATION_NS;
+        game_state.timing.tick += 1;
+
+        std.debug.print("{}\n", .{game_state.timing.tick});
+    }
+
+    render();
+}
+
+fn render() void {
+    sg.beginPass(.{ .action = render_state.pass_action, .swapchain = sglue.swapchain() });
+    sg.applyPipeline(render_state.pip);
+    sg.applyBindings(render_state.bind);
+
+    render_state.vs_params.screen_size = .{
         @floatFromInt(sapp.width()), // screen width
         @floatFromInt(sapp.height()), // screen height
     };
-    sg.applyUniforms(0, sg.asRange(&state.vs_params));
+    sg.applyUniforms(0, sg.asRange(&render_state.vs_params));
 
     const single_sprite: Sprite = .{
         .x = 0.0 * sprite_size,
@@ -208,7 +242,7 @@ export fn frame() void {
         .texture = .PLAYER,
     };
 
-    var vertex_data: [MAX_SPRITES * 4]Vertex = std.mem.zeroes([MAX_SPRITES * 4]Vertex);
+    var vertex_data: [MAX_SPRITES * 4]QuadVertex = std.mem.zeroes([MAX_SPRITES * 4]QuadVertex);
     var vertex_count: usize = 0;
 
     const sprites = [_]Sprite{ single_sprite, another_sprite, player_sprite };
@@ -249,7 +283,7 @@ export fn frame() void {
         vertex_count += 4;
     }
 
-    sg.updateBuffer(state.bind.vertex_buffers[0], sg.asRange(vertex_data[0..vertex_count]));
+    sg.updateBuffer(render_state.bind.vertex_buffers[0], sg.asRange(vertex_data[0..vertex_count]));
 
     // Draw 6 vertexes for each sprite, 6 vertexes is 1 quad
     sg.draw(0, @intCast(sprites.len * 6), 1);
@@ -263,8 +297,8 @@ export fn input(event: ?*const sapp.Event) void {
 
 export fn cleanup() void {
     sg.shutdown();
-    state.stbi_img.deinit();
-    state.stbi_img_2.deinit();
+    render_state.stbi_img.deinit();
+    render_state.stbi_img_2.deinit();
     zstbi.deinit();
 }
 
