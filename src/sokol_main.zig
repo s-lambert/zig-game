@@ -208,7 +208,9 @@ export fn frame() void {
     var vertex_data: [MAX_SPRITES * 4]Vertex = std.mem.zeroes([MAX_SPRITES * 4]Vertex);
     var vertex_count: usize = 0;
 
-    for ([_]Sprite{ single_sprite, another_sprite, player_sprite }) |sprite| {
+    const sprites = [_]Sprite{ single_sprite, another_sprite, player_sprite };
+
+    for (sprites) |sprite| {
         const x = sprite.x;
         const y = sprite.y;
         const w = sprite.width;
@@ -219,17 +221,33 @@ export fn frame() void {
         const vh = sprite.uv_height;
         const tex_idx = @intFromEnum(sprite.spritesheet);
 
-        vertex_data[vertex_count + 0] = .{ .pos = .{ x, y + h }, .uv = .{ u, v + vh }, .tex_idx = tex_idx };
-        vertex_data[vertex_count + 1] = .{ .pos = .{ x + w, y + h }, .uv = .{ u + uw, v + vh }, .tex_idx = tex_idx };
-        vertex_data[vertex_count + 2] = .{ .pos = .{ x, y }, .uv = .{ u, v }, .tex_idx = tex_idx };
-        vertex_data[vertex_count + 3] = .{ .pos = .{ x + w, y }, .uv = .{ u + uw, v }, .tex_idx = tex_idx };
+        vertex_data[vertex_count + 0] = .{
+            .pos = .{ x, y + h },
+            .uv = .{ u, v + vh },
+            .tex_idx = tex_idx,
+        };
+        vertex_data[vertex_count + 1] = .{
+            .pos = .{ x + w, y + h },
+            .uv = .{ u + uw, v + vh },
+            .tex_idx = tex_idx,
+        };
+        vertex_data[vertex_count + 2] = .{
+            .pos = .{ x, y },
+            .uv = .{ u, v },
+            .tex_idx = tex_idx,
+        };
+        vertex_data[vertex_count + 3] = .{
+            .pos = .{ x + w, y },
+            .uv = .{ u + uw, v },
+            .tex_idx = tex_idx,
+        };
 
         vertex_count += 4;
     }
 
     sg.updateBuffer(state.bind.vertex_buffers[0], sg.asRange(vertex_data[0..vertex_count]));
 
-    sg.draw(0, @intCast(3 * 6), 1);
+    sg.draw(0, @intCast(sprites.len * 6), 1);
     sg.endPass();
     sg.commit();
 }
