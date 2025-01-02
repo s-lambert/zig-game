@@ -14,7 +14,7 @@ const shd = @import("shaders/blank.glsl.zig");
 const sprite_size = 16.0;
 const render_scale = 4.0;
 
-const Position = struct { x: usize, y: usize };
+const Position = struct { x: i32 = 0, y: i32 = 0 };
 
 const GameState = struct {
     player_position: Position,
@@ -22,9 +22,15 @@ const GameState = struct {
         tick: u32 = 0,
         tick_accum: i32 = 0,
     } = .{},
+    input: struct {
+        up: bool = false,
+        down: bool = false,
+        left: bool = false,
+        right: bool = false,
+    } = .{},
 };
 var game_state: GameState = .{
-    .player_position = .{ .x = 13, .y = 0 },
+    .player_position = .{ .x = 13, .y = 9 },
 };
 
 const Rect = struct {
@@ -190,8 +196,21 @@ export fn frame() void {
         game_state.timing.tick_accum -= TICK_DURATION_NS;
         game_state.timing.tick += 1;
 
-        std.debug.print("{}\n", .{game_state.timing.tick});
+        // Move player
+        var move_to: Position = .{};
+        if (game_state.input.up) move_to.y -= 1;
+        if (game_state.input.down) move_to.y += 1;
+        if (game_state.input.left) move_to.x -= 1;
+        if (game_state.input.right) move_to.x += 1;
+
+        game_state.player_position.x += move_to.x;
+        game_state.player_position.y += move_to.y;
+
+        game_state.player_position.x = std.math.clamp(game_state.player_position.x, 0, 13);
+        game_state.player_position.y = std.math.clamp(game_state.player_position.y, 0, 9);
     }
+
+    game_state.input = .{};
 
     render();
 }
@@ -241,8 +260,8 @@ fn render() void {
 
     const player_sprite: Sprite = .{
         .world_rect = .{
-            .x = 13.0 * sprite_size,
-            .y = 9.0 * sprite_size,
+            .x = @as(f32, @floatFromInt(game_state.player_position.x)) * sprite_size,
+            .y = @as(f32, @floatFromInt(game_state.player_position.y)) * sprite_size,
             .width = sprite_size,
             .height = sprite_size,
         },
@@ -305,8 +324,20 @@ fn render() void {
     sg.commit();
 }
 
-export fn input(event: ?*const sapp.Event) void {
-    _ = event;
+export fn input(ev: ?*const sapp.Event) void {
+    if (ev) |event| {
+        if (event.type == .KEY_DOWN) {
+            switch (event.key_code) {
+                .ESCAPE => sapp.quit(),
+
+                .UP, .W => game_state.input.up = true,
+                .DOWN, .S => game_state.input.down = true,
+                .LEFT, .A => game_state.input.left = true,
+                .RIGHT, .D => game_state.input.right = true,
+                else => {},
+            }
+        }
+    }
 }
 
 export fn cleanup() void {
