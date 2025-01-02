@@ -292,21 +292,25 @@ fn render() void {
         const vh = sprite.spritesheet_rect.height;
         const tex_idx = @intFromEnum(sprite.spritesheet_texture);
 
+        // Bottom-left
         vertex_data[vertex_count + 0] = .{
             .pos = .{ x, y + h },
             .uv = .{ u, v + vh },
             .tex_idx = tex_idx,
         };
+        // Bottom-right
         vertex_data[vertex_count + 1] = .{
             .pos = .{ x + w, y + h },
             .uv = .{ u + uw, v + vh },
             .tex_idx = tex_idx,
         };
+        // Top-left
         vertex_data[vertex_count + 2] = .{
             .pos = .{ x, y },
             .uv = .{ u, v },
             .tex_idx = tex_idx,
         };
+        // Top-right
         vertex_data[vertex_count + 3] = .{
             .pos = .{ x + w, y },
             .uv = .{ u + uw, v },
