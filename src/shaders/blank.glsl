@@ -24,6 +24,7 @@ void main() {
 @fs fs
 layout(binding=0) uniform texture2D tile_texture;
 layout(binding=1) uniform texture2D player_texture;
+layout(binding=2) uniform texture2D dungeon_texture;
 layout(binding=0) uniform sampler sprite_sampler;
 
 in vec2 v_texcoord;
@@ -36,6 +37,7 @@ void main() {
     switch(v_texture_index) {
         case 0: color = texture(sampler2D(tile_texture, sprite_sampler), v_texcoord); break;
         case 1: color = texture(sampler2D(player_texture, sprite_sampler), v_texcoord); break;
+        case 2: color = texture(sampler2D(dungeon_texture, sprite_sampler), v_texcoord); break;
         default: color = vec4(1.0, 0.0, 0.0, 1.0);
     }
 

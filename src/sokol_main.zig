@@ -13,6 +13,21 @@ const shd = @import("shaders/blank.glsl.zig");
 
 const sprite_size = 16.0;
 const render_scale = 4.0;
+const tiles_width = 14;
+const tiles_height = 10;
+
+const dungeon: [tiles_width * tiles_height]usize = .{
+    0, 1,  2, 3,  4, 5,  6, 7, 8, 9,  10, 11, 12, 13,
+    0, 12, 0, 0,  0, 0,  0, 0, 0, 0,  0,  0,  0,  0,
+    0, 0,  0, 0,  0, 0,  0, 0, 0, 12, 12, 12, 0,  0,
+    0, 0,  0, 12, 0, 0,  0, 0, 0, 0,  0,  0,  0,  0,
+    0, 0,  0, 0,  0, 0,  0, 0, 0, 0,  0,  0,  0,  0,
+    0, 0,  0, 0,  0, 0,  0, 0, 0, 0,  0,  0,  0,  0,
+    0, 0,  0, 0,  0, 0,  0, 0, 0, 0,  0,  0,  0,  0,
+    0, 0,  0, 0,  0, 12, 0, 0, 0, 0,  0,  0,  0,  0,
+    0, 0,  0, 0,  0, 0,  0, 0, 0, 0,  0,  0,  0,  0,
+    0, 0,  0, 0,  0, 0,  0, 0, 0, 0,  0,  0,  0,  0,
+};
 
 const Position = struct { x: i32 = 0, y: i32 = 0 };
 
@@ -51,6 +66,10 @@ const DrawState = struct {
             .TILE => {
                 spritesheet_width = 256.0;
                 spritesheet_height = 320.0;
+            },
+            .DUNGEON => {
+                spritesheet_width = 192.0;
+                spritesheet_height = 176.0;
             },
         }
 
@@ -98,6 +117,7 @@ const QuadVertex = struct {
 const Texture = enum {
     TILE,
     PLAYER,
+    DUNGEON,
 };
 
 const Sprite = struct {
@@ -115,8 +135,10 @@ const render_state = struct {
     var vs_params: shd.VsParams = undefined;
     var stbi_img: zstbi.Image = undefined;
     var stbi_img_2: zstbi.Image = undefined;
+    var dungeon_stbi_img: zstbi.Image = undefined;
     var img: sg.Image = .{};
     var img_2: sg.Image = .{};
+    var dungeon_img: sg.Image = .{};
 };
 
 var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -184,8 +206,18 @@ export fn init() void {
         },
     );
 
+    render_state.dungeon_stbi_img = zstbi.Image.loadFromFile("src/assets/dungeon_tilemap.png", 4) catch unreachable;
+    var dungeon_image: [6][16]sg.Range = std.mem.zeroes([6][16]sg.Range);
+    dungeon_image[0][0] = sg.asRange(render_state.dungeon_stbi_img.data);
+    render_state.dungeon_img = sg.makeImage(.{
+        .width = @intCast(render_state.dungeon_stbi_img.width),
+        .height = @intCast(render_state.dungeon_stbi_img.height),
+        .data = .{ .subimage = dungeon_image },
+    });
+
     render_state.bind.images[0] = render_state.img;
     render_state.bind.images[1] = render_state.img_2;
+    render_state.bind.images[2] = render_state.dungeon_img;
     render_state.bind.samplers[0] = sg.makeSampler(.{
         .min_filter = .NEAREST,
         .mag_filter = .NEAREST,
@@ -260,6 +292,19 @@ export fn frame() void {
     }
 
     draw_state.reset();
+
+    for (dungeon, 0..) |tile, tile_index| {
+        const tile_x = tile_index % tiles_width;
+        const tile_y = tile_index / tiles_width;
+
+        const tileset_width = 12;
+        const frame_x = tile % tileset_width;
+        const frame_y = tile / tileset_width;
+
+        const tile_pos: Position = .{ .x = @intCast(tile_x), .y = @intCast(tile_y) };
+        const tile_frame: Position = .{ .x = @intCast(frame_x), .y = @intCast(frame_y) };
+        draw_state.draw_tile(&tile_pos, &tile_frame, .DUNGEON);
+    }
 
     const tile_a_pos: Position = .{ .x = 0, .y = 0 };
     const tile_a_frame: Position = .{ .x = 0, .y = 0 };
@@ -367,6 +412,7 @@ export fn cleanup() void {
     sg.shutdown();
     render_state.stbi_img.deinit();
     render_state.stbi_img_2.deinit();
+    render_state.dungeon_stbi_img.deinit();
     zstbi.deinit();
 }
 
@@ -376,8 +422,8 @@ pub fn main() void {
         .frame_cb = frame,
         .event_cb = input,
         .cleanup_cb = cleanup,
-        .width = 14 * sprite_size * render_scale,
-        .height = 10 * sprite_size * render_scale,
+        .width = tiles_width * sprite_size * render_scale,
+        .height = tiles_height * sprite_size * render_scale,
         .sample_count = 1,
         .icon = .{ .sokol_default = true },
         .window_title = "blank.zig",
