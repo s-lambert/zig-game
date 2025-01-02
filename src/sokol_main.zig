@@ -128,20 +128,14 @@ const Sprite = struct {
 
 const MAX_SPRITES = 10000;
 
+var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+
 const render_state = struct {
     var pass_action: sg.PassAction = .{};
     var pip: sg.Pipeline = .{};
     var bind: sg.Bindings = .{};
     var vs_params: shd.VsParams = undefined;
-    var stbi_img: zstbi.Image = undefined;
-    var stbi_img_2: zstbi.Image = undefined;
-    var dungeon_stbi_img: zstbi.Image = undefined;
-    var img: sg.Image = .{};
-    var img_2: sg.Image = .{};
-    var dungeon_img: sg.Image = .{};
 };
-
-var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
 export fn init() void {
     sg.setup(.{
@@ -160,7 +154,6 @@ export fn init() void {
     });
 
     var indices = std.mem.zeroes([MAX_SPRITES * 6]u16);
-
     for (0..MAX_SPRITES) |n| {
         const index_index = n * 6;
         const vertex_index = n * 4;
@@ -174,50 +167,44 @@ export fn init() void {
         indices[index_index + 4] = @as(u16, @intCast(vertex_index)) + 3;
         indices[index_index + 5] = @as(u16, @intCast(vertex_index)) + 2;
     }
-
     render_state.bind.index_buffer = sg.makeBuffer(.{
         .data = sg.asRange(&indices),
         .type = .INDEXBUFFER,
     });
 
     zstbi.init(arena_allocator.allocator());
+    defer zstbi.deinit();
 
-    render_state.stbi_img = zstbi.Image.loadFromFile("src/assets/1st map.png", 4) catch unreachable;
+    var tile_stbi = zstbi.Image.loadFromFile("src/assets/1st map.png", 4) catch unreachable;
     var tile_image: [6][16]sg.Range = std.mem.zeroes([6][16]sg.Range);
-    tile_image[0][0] = sg.asRange(render_state.stbi_img.data);
-    render_state.img = sg.makeImage(
-        .{
-            .width = @intCast(render_state.stbi_img.width),
-            .height = @intCast(render_state.stbi_img.height),
-            .data = .{
-                .subimage = tile_image,
-            },
-        },
-    );
+    tile_image[0][0] = sg.asRange(tile_stbi.data);
+    defer tile_stbi.deinit();
 
-    render_state.stbi_img_2 = zstbi.Image.loadFromFile("src/assets/daoist.png", 4) catch unreachable;
+    var player_sbti = zstbi.Image.loadFromFile("src/assets/daoist.png", 4) catch unreachable;
     var player_image: [6][16]sg.Range = std.mem.zeroes([6][16]sg.Range);
-    player_image[0][0] = sg.asRange(render_state.stbi_img_2.data);
-    render_state.img_2 = sg.makeImage(
-        .{
-            .width = @intCast(render_state.stbi_img_2.width),
-            .height = @intCast(render_state.stbi_img_2.height),
-            .data = .{ .subimage = player_image },
-        },
-    );
+    player_image[0][0] = sg.asRange(player_sbti.data);
+    defer player_sbti.deinit();
 
-    render_state.dungeon_stbi_img = zstbi.Image.loadFromFile("src/assets/dungeon_tilemap.png", 4) catch unreachable;
+    var dungeon_stbi = zstbi.Image.loadFromFile("src/assets/dungeon_tilemap.png", 4) catch unreachable;
     var dungeon_image: [6][16]sg.Range = std.mem.zeroes([6][16]sg.Range);
-    dungeon_image[0][0] = sg.asRange(render_state.dungeon_stbi_img.data);
-    render_state.dungeon_img = sg.makeImage(.{
-        .width = @intCast(render_state.dungeon_stbi_img.width),
-        .height = @intCast(render_state.dungeon_stbi_img.height),
+    dungeon_image[0][0] = sg.asRange(dungeon_stbi.data);
+    defer dungeon_stbi.deinit();
+
+    render_state.bind.images[0] = sg.makeImage(.{
+        .width = @intCast(tile_stbi.width),
+        .height = @intCast(tile_stbi.height),
+        .data = .{ .subimage = tile_image },
+    });
+    render_state.bind.images[1] = sg.makeImage(.{
+        .width = @intCast(player_sbti.width),
+        .height = @intCast(player_sbti.height),
+        .data = .{ .subimage = player_image },
+    });
+    render_state.bind.images[2] = sg.makeImage(.{
+        .width = @intCast(dungeon_stbi.width),
+        .height = @intCast(dungeon_stbi.height),
         .data = .{ .subimage = dungeon_image },
     });
-
-    render_state.bind.images[0] = render_state.img;
-    render_state.bind.images[1] = render_state.img_2;
-    render_state.bind.images[2] = render_state.dungeon_img;
     render_state.bind.samplers[0] = sg.makeSampler(.{
         .min_filter = .NEAREST,
         .mag_filter = .NEAREST,
@@ -410,10 +397,6 @@ export fn input(ev: ?*const sapp.Event) void {
 
 export fn cleanup() void {
     sg.shutdown();
-    render_state.stbi_img.deinit();
-    render_state.stbi_img_2.deinit();
-    render_state.dungeon_stbi_img.deinit();
-    zstbi.deinit();
 }
 
 pub fn main() void {
