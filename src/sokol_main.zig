@@ -33,6 +33,55 @@ var game_state: GameState = .{
     .player_position = .{ .x = 13, .y = 9 },
 };
 
+const DrawState = struct {
+    sprites: [MAX_SPRITES]Sprite = std.mem.zeroes([MAX_SPRITES]Sprite),
+    next_sprite: usize = 0,
+    num_sprites: usize = 0,
+
+    fn draw_tile(self: *@This(), world_pos: *const Position, frame_pos: *const Position, tex: Texture) void {
+        std.debug.assert(self.next_sprite < MAX_SPRITES);
+
+        var spritesheet_width: f32 = undefined;
+        var spritesheet_height: f32 = undefined;
+        switch (tex) {
+            .PLAYER => {
+                spritesheet_width = 80.0;
+                spritesheet_height = 16.0;
+            },
+            .TILE => {
+                spritesheet_width = 256.0;
+                spritesheet_height = 320.0;
+            },
+        }
+
+        self.sprites[self.next_sprite] = .{
+            .world_rect = .{
+                .x = @as(f32, @floatFromInt(world_pos.x)) * sprite_size,
+                .y = @as(f32, @floatFromInt(world_pos.y)) * sprite_size,
+                .width = sprite_size,
+                .height = sprite_size,
+            },
+            .spritesheet_rect = .{
+                .x = (@as(f32, @floatFromInt(frame_pos.x)) * sprite_size) / spritesheet_width,
+                .y = (@as(f32, @floatFromInt(frame_pos.y)) * sprite_size) / spritesheet_height,
+                .width = sprite_size / spritesheet_width,
+                .height = sprite_size / spritesheet_height,
+            },
+            .spritesheet_texture = tex,
+        };
+
+        self.next_sprite += 1;
+        self.num_sprites += 1;
+        std.debug.assert(self.num_sprites <= MAX_SPRITES);
+    }
+
+    fn reset(self: *@This()) void {
+        self.next_sprite = 0;
+        self.num_sprites = 0;
+    }
+};
+var draw_state: DrawState = .{};
+
 const Rect = struct {
     x: f32,
     y: f32,
@@ -210,7 +259,18 @@ export fn frame() void {
         game_state.player_position.y = std.math.clamp(game_state.player_position.y, 0, 9);
     }
 
-    game_state.input = .{};
+    draw_state.reset();
+
+    const tile_a_pos: Position = .{ .x = 0, .y = 0 };
+    const tile_a_frame: Position = .{ .x = 0, .y = 0 };
+    draw_state.draw_tile(&tile_a_pos, &tile_a_frame, .TILE);
+
+    const tile_b_pos: Position = .{ .x = 13, .y = 9 };
+    const tile_b_frame: Position = .{ .x = 1, .y = 11 };
+    draw_state.draw_tile(&tile_b_pos, &tile_b_frame, .TILE);
+
+    const player_frame: Position = .{ .x = 1, .y = 0 };
+    draw_state.draw_tile(&game_state.player_position, &player_frame, .PLAYER);
 
     render();
 }
@@ -226,61 +286,11 @@ fn render() void {
     };
     sg.applyUniforms(0, sg.asRange(&render_state.vs_params));
 
-    const single_sprite: Sprite = .{
-        .world_rect = .{
-            .x = 0.0 * sprite_size,
-            .y = 0.0 * sprite_size,
-            .width = sprite_size,
-            .height = sprite_size,
-        },
-        .spritesheet_rect = .{
-            .x = (0.0 * sprite_size) / 256.0,
-            .y = (0.0 * sprite_size) / 320.0,
-            .width = sprite_size / 256.0,
-            .height = sprite_size / 320.0,
-        },
-        .spritesheet_texture = .TILE,
-    };
-
-    const another_sprite: Sprite = .{
-        .world_rect = .{
-            .x = 13.0 * sprite_size,
-            .y = 9.0 * sprite_size,
-            .width = sprite_size,
-            .height = sprite_size,
-        },
-        .spritesheet_rect = .{
-            .x = (1.0 * sprite_size) / 256.0,
-            .y = (11.0 * sprite_size) / 320.0,
-            .width = sprite_size / 256.0,
-            .height = sprite_size / 320.0,
-        },
-        .spritesheet_texture = .TILE,
-    };
-
-    const player_sprite: Sprite = .{
-        .world_rect = .{
-            .x = @as(f32, @floatFromInt(game_state.player_position.x)) * sprite_size,
-            .y = @as(f32, @floatFromInt(game_state.player_position.y)) * sprite_size,
-            .width = sprite_size,
-            .height = sprite_size,
-        },
-        .spritesheet_rect = .{
-            .x = (1.0 * sprite_size) / 80.0,
-            .y = (0.0 * sprite_size) / 16.0,
-            .width = sprite_size / 80.0,
-            .height = sprite_size / 16.0,
-        },
-        .spritesheet_texture = .PLAYER,
-    };
-
     var vertex_data: [MAX_SPRITES * 4]QuadVertex = std.mem.zeroes([MAX_SPRITES * 4]QuadVertex);
     var vertex_count: usize = 0;
 
-    const sprites = [_]Sprite{ single_sprite, another_sprite, player_sprite };
-
     const scale = 4.0;
-    for (sprites) |sprite| {
+    for (draw_state.sprites) |sprite| {
         const x = sprite.world_rect.x * scale;
         const y = sprite.world_rect.y * scale;
         const w = sprite.world_rect.width * scale;
@@ -323,7 +333,7 @@ fn render() void {
     sg.updateBuffer(render_state.bind.vertex_buffers[0], sg.asRange(vertex_data[0..vertex_count]));
 
     // Draw 6 vertexes for each sprite, 6 vertexes is 1 quad
-    sg.draw(0, @intCast(sprites.len * 6), 1);
+    sg.draw(0, @intCast(draw_state.num_sprites * 6), 1);
     sg.endPass();
     sg.commit();
 }
@@ -338,6 +348,15 @@ export fn input(ev: ?*const sapp.Event) void {
                 .DOWN, .S => game_state.input.down = true,
                 .LEFT, .A => game_state.input.left = true,
                 .RIGHT, .D => game_state.input.right = true,
+                else => {},
+            }
+        }
+        if (event.type == .KEY_UP) {
+            switch (event.key_code) {
+                .UP, .W => game_state.input.up = false,
+                .DOWN, .S => game_state.input.down = false,
+                .LEFT, .A => game_state.input.left = false,
+                .RIGHT, .D => game_state.input.right = false,
                 else => {},
             }
         }
