@@ -27,6 +27,13 @@ var game_state: GameState = .{
     .player_position = .{ .x = 13, .y = 0 },
 };
 
+const Rect = struct {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+};
+
 const QuadVertex = struct {
     pos: [2]f32, // x, y position
     uv: [2]f32, // texture coordinates
@@ -39,15 +46,9 @@ const Texture = enum {
 };
 
 const Sprite = struct {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-    uv_x: f32,
-    uv_y: f32,
-    uv_width: f32,
-    uv_height: f32,
-    texture: Texture,
+    world_rect: Rect,
+    spritesheet_rect: Rect,
+    spritesheet_texture: Texture,
 };
 
 const MAX_SPRITES = 10000;
@@ -207,39 +208,51 @@ fn render() void {
     sg.applyUniforms(0, sg.asRange(&render_state.vs_params));
 
     const single_sprite: Sprite = .{
-        .x = 0.0 * sprite_size,
-        .y = 0.0 * sprite_size,
-        .width = sprite_size,
-        .height = sprite_size,
-        .uv_x = (0.0 * sprite_size) / 256.0,
-        .uv_y = (0.0 * sprite_size) / 320.0,
-        .uv_width = sprite_size / 256.0,
-        .uv_height = sprite_size / 320.0,
-        .texture = .TILE,
+        .world_rect = .{
+            .x = 0.0 * sprite_size,
+            .y = 0.0 * sprite_size,
+            .width = sprite_size,
+            .height = sprite_size,
+        },
+        .spritesheet_rect = .{
+            .x = (0.0 * sprite_size) / 256.0,
+            .y = (0.0 * sprite_size) / 320.0,
+            .width = sprite_size / 256.0,
+            .height = sprite_size / 320.0,
+        },
+        .spritesheet_texture = .TILE,
     };
 
     const another_sprite: Sprite = .{
-        .x = 13.0 * sprite_size,
-        .y = 9.0 * sprite_size,
-        .width = sprite_size,
-        .height = sprite_size,
-        .uv_x = (1.0 * sprite_size) / 256.0,
-        .uv_y = (11.0 * sprite_size) / 320.0,
-        .uv_width = sprite_size / 256.0,
-        .uv_height = sprite_size / 320.0,
-        .texture = .TILE,
+        .world_rect = .{
+            .x = 13.0 * sprite_size,
+            .y = 9.0 * sprite_size,
+            .width = sprite_size,
+            .height = sprite_size,
+        },
+        .spritesheet_rect = .{
+            .x = (1.0 * sprite_size) / 256.0,
+            .y = (11.0 * sprite_size) / 320.0,
+            .width = sprite_size / 256.0,
+            .height = sprite_size / 320.0,
+        },
+        .spritesheet_texture = .TILE,
     };
 
     const player_sprite: Sprite = .{
-        .x = 13.0 * sprite_size,
-        .y = 9.0 * sprite_size,
-        .width = sprite_size,
-        .height = sprite_size,
-        .uv_x = (1.0 * sprite_size) / 80.0,
-        .uv_y = (0.0 * sprite_size) / 16.0,
-        .uv_width = sprite_size / 80.0,
-        .uv_height = sprite_size / 16.0,
-        .texture = .PLAYER,
+        .world_rect = .{
+            .x = 13.0 * sprite_size,
+            .y = 9.0 * sprite_size,
+            .width = sprite_size,
+            .height = sprite_size,
+        },
+        .spritesheet_rect = .{
+            .x = (1.0 * sprite_size) / 80.0,
+            .y = (0.0 * sprite_size) / 16.0,
+            .width = sprite_size / 80.0,
+            .height = sprite_size / 16.0,
+        },
+        .spritesheet_texture = .PLAYER,
     };
 
     var vertex_data: [MAX_SPRITES * 4]QuadVertex = std.mem.zeroes([MAX_SPRITES * 4]QuadVertex);
@@ -249,15 +262,16 @@ fn render() void {
 
     const scale = 4.0;
     for (sprites) |sprite| {
-        const x = sprite.x * scale;
-        const y = sprite.y * scale;
-        const w = sprite.width * scale;
-        const h = sprite.height * scale;
-        const u = sprite.uv_x;
-        const v = sprite.uv_y;
-        const uw = sprite.uv_width;
-        const vh = sprite.uv_height;
-        const tex_idx = @intFromEnum(sprite.texture);
+        const x = sprite.world_rect.x * scale;
+        const y = sprite.world_rect.y * scale;
+        const w = sprite.world_rect.width * scale;
+        const h = sprite.world_rect.height * scale;
+
+        const u = sprite.spritesheet_rect.x;
+        const v = sprite.spritesheet_rect.y;
+        const uw = sprite.spritesheet_rect.width;
+        const vh = sprite.spritesheet_rect.height;
+        const tex_idx = @intFromEnum(sprite.spritesheet_texture);
 
         vertex_data[vertex_count + 0] = .{
             .pos = .{ x, y + h },
