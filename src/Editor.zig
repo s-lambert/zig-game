@@ -3,6 +3,7 @@ const rl = @import("raylib");
 const rg = @import("raygui");
 const constants = @import("./constants.zig");
 const sprite = @import("./sprite.zig");
+const utils = @import("./utils.zig");
 
 const EditorState = struct {
     cursor: struct {
@@ -18,6 +19,12 @@ var editor_state = EditorState{
         },
     },
 };
+
+var dungeon_spritesheet: rl.Texture2D = undefined;
+
+pub fn preload() void {
+    dungeon_spritesheet = utils.load_texture("./assets/dungeon_tilemap.png");
+}
 
 var key_cooldown: f32 = 0.125;
 fn reset_key_cooldown() void {
@@ -44,25 +51,47 @@ pub fn update() void {
 }
 
 var mouse_position = rl.Vector2.init(0.0, 0.0);
+
+const sprite_size = 16.0;
+const tiles_width = 14;
+const tiles_height = 10;
+
 pub fn draw() void {
     _ = rg.guiGrid(
         .{
             .x = 0,
             .y = 0,
-            .width = constants.window_width,
-            .height = constants.window_height,
+            .width = sprite_size * tiles_width,
+            .height = sprite_size * tiles_height,
         },
         "",
-        16.0,
+        sprite_size,
         1,
         &mouse_position,
     );
 
-    std.debug.print("x:{d} y:{d}\n", .{ mouse_position.x, mouse_position.y });
+    rl.drawTexturePro(
+        dungeon_spritesheet,
+        .{
+            .x = 0.0,
+            .y = 0.0,
+            .width = 192.0,
+            .height = 176.0,
+        },
+        .{
+            .x = 0.0,
+            .y = sprite_size * tiles_height,
+            .width = 192.0,
+            .height = 176.0,
+        },
+        .{ .x = 0.0, .y = 0.0 },
+        0.0,
+        rl.Color.white,
+    );
 
     rl.drawRectangleLinesEx(
         editor_state.cursor.position.as_rect(),
-        0.5,
+        1.0,
         rl.Color.black,
     );
 }

@@ -15,6 +15,8 @@ pub fn main() !void {
     rl.initWindow(constants.window_width, constants.window_height, "Editor");
     defer rl.closeWindow();
 
+    Editor.preload();
+
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();
         defer rl.endDrawing();
