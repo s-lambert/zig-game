@@ -10,11 +10,15 @@ const vec3 = @import("math.zig").Vec3;
 const mat4 = @import("math.zig").Mat4;
 const assert = @import("std").debug.assert;
 const shd = @import("shaders/blank.glsl.zig");
+const display_shd = @import("shaders/post_process.glsl.zig");
 
 const sprite_size = 16.0;
 const render_scale = 4.0;
 const tiles_width = 14;
 const tiles_height = 10;
+const screen_width = tiles_width * sprite_size * render_scale;
+const screen_height = tiles_height * sprite_size * render_scale;
+const offscreen_sample_count = 1;
 
 const dungeon: [tiles_width * tiles_height]usize = .{
     0, 1,  2, 3,  4, 5,  6, 7, 8, 9,  10, 11, 12, 13,
@@ -108,6 +112,11 @@ const Rect = struct {
     height: f32,
 };
 
+const DisplayVertex = struct {
+    pos: [2]f32,
+    uv: [2]f32,
+};
+
 const QuadVertex = struct {
     pos: [2]f32, // x, y position
     uv: [2]f32, // texture coordinates
@@ -131,10 +140,18 @@ const MAX_SPRITES = 10000;
 var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
 const render_state = struct {
-    var pass_action: sg.PassAction = .{};
-    var pip: sg.Pipeline = .{};
-    var bind: sg.Bindings = .{};
-    var vs_params: shd.VsParams = undefined;
+    const offscreen = struct {
+        var pass_action: sg.PassAction = .{};
+        var attachments: sg.Attachments = .{};
+        var pip: sg.Pipeline = .{};
+        var bind: sg.Bindings = .{};
+        var vs_params: shd.VsParams = undefined;
+    };
+    const display = struct {
+        var pass_action: sg.PassAction = .{};
+        var pip: sg.Pipeline = .{};
+        var bind: sg.Bindings = .{};
+    };
 };
 
 export fn init() void {
@@ -143,12 +160,63 @@ export fn init() void {
         .logger = .{ .func = slog.func },
     });
 
-    render_state.pass_action.colors[0] = .{
+    // offscreen pass action: clear to black
+    render_state.offscreen.pass_action.colors[0] = .{
         .load_action = .CLEAR,
-        .clear_value = .{ .r = 0, .g = 0, .a = 1 },
+        .clear_value = .{ .r = 0.25, .g = 0.25, .b = 0.25, .a = 1.0 },
     };
 
-    render_state.bind.vertex_buffers[0] = sg.makeBuffer(.{
+    var img_desc = sg.ImageDesc{
+        .render_target = true,
+        .width = screen_width,
+        .height = screen_height,
+        .pixel_format = .RGBA8,
+        .sample_count = offscreen_sample_count,
+    };
+    const color_img = sg.makeImage(img_desc);
+    img_desc.pixel_format = .DEPTH;
+    const depth_img = sg.makeImage(img_desc);
+
+    var atts_desc = sg.AttachmentsDesc{};
+    atts_desc.colors[0].image = color_img;
+    atts_desc.depth_stencil.image = depth_img;
+    render_state.offscreen.attachments = sg.makeAttachments(atts_desc);
+
+    render_state.offscreen.pip = sg.makePipeline(.{
+        .shader = sg.makeShader(shd.blankShaderDesc(sg.queryBackend())),
+        .index_type = .UINT16,
+        .cull_mode = .NONE,
+        .sample_count = offscreen_sample_count,
+        .depth = .{
+            .pixel_format = .DEPTH,
+            .compare = .ALWAYS,
+            .write_enabled = false,
+        },
+        .layout = init: {
+            var l = sg.VertexLayoutState{};
+            l.buffers[0].stride = @sizeOf(QuadVertex);
+            l.attrs[shd.ATTR_blank_position] = .{ .format = .FLOAT2, .offset = @offsetOf(QuadVertex, "pos") };
+            l.attrs[shd.ATTR_blank_texcoord] = .{ .format = .FLOAT2, .offset = @offsetOf(QuadVertex, "uv") };
+            l.attrs[shd.ATTR_blank_texture_index] = .{ .format = .UBYTE4, .offset = @offsetOf(QuadVertex, "tex_idx") };
+            break :init l;
+        },
+        .colors = init: {
+            var c: [4]sg.ColorTargetState = .{ .{}, .{}, .{}, .{} };
+            c[0].pixel_format = .RGBA8;
+            c[0].blend = .{
+                .enabled = true,
+                .src_factor_rgb = .SRC_ALPHA,
+                .dst_factor_rgb = .ONE_MINUS_SRC_ALPHA,
+                .op_rgb = .ADD,
+                .src_factor_alpha = .ONE,
+                .dst_factor_alpha = .ONE_MINUS_SRC_ALPHA,
+                .op_alpha = .ADD,
+            };
+            break :init c;
+        },
+    });
+
+    render_state.offscreen.bind.vertex_buffers[0] = sg.makeBuffer(.{
         .size = @sizeOf(QuadVertex) * MAX_SPRITES * 4,
         .usage = .DYNAMIC,
     });
@@ -167,7 +235,7 @@ export fn init() void {
         indices[index_index + 4] = @as(u16, @intCast(vertex_index)) + 3;
         indices[index_index + 5] = @as(u16, @intCast(vertex_index)) + 2;
     }
-    render_state.bind.index_buffer = sg.makeBuffer(.{
+    render_state.offscreen.bind.index_buffer = sg.makeBuffer(.{
         .data = sg.asRange(&indices),
         .type = .INDEXBUFFER,
     });
@@ -190,68 +258,78 @@ export fn init() void {
     dungeon_image[0][0] = sg.asRange(dungeon_stbi.data);
     defer dungeon_stbi.deinit();
 
-    render_state.bind.images[0] = sg.makeImage(.{
+    render_state.offscreen.bind.images[0] = sg.makeImage(.{
         .width = @intCast(tile_stbi.width),
         .height = @intCast(tile_stbi.height),
         .data = .{ .subimage = tile_image },
     });
-    render_state.bind.images[1] = sg.makeImage(.{
+    render_state.offscreen.bind.images[1] = sg.makeImage(.{
         .width = @intCast(player_sbti.width),
         .height = @intCast(player_sbti.height),
         .data = .{ .subimage = player_image },
     });
-    render_state.bind.images[2] = sg.makeImage(.{
+    render_state.offscreen.bind.images[2] = sg.makeImage(.{
         .width = @intCast(dungeon_stbi.width),
         .height = @intCast(dungeon_stbi.height),
         .data = .{ .subimage = dungeon_image },
     });
-    render_state.bind.samplers[0] = sg.makeSampler(.{
+    render_state.offscreen.bind.samplers[0] = sg.makeSampler(.{
         .min_filter = .NEAREST,
         .mag_filter = .NEAREST,
         .wrap_u = .CLAMP_TO_EDGE,
         .wrap_v = .CLAMP_TO_EDGE,
     });
 
-    var pip_desc: sg.PipelineDesc = .{
-        .shader = sg.makeShader(shd.blankShaderDesc(sg.queryBackend())),
-        .cull_mode = .NONE,
-        .index_type = .UINT16,
-        .depth = .{
-            .write_enabled = false,
-            .compare = .ALWAYS,
+    // display pass action: clear to blue-ish
+    render_state.display.pass_action.colors[0] = .{
+        .load_action = .CLEAR,
+        .clear_value = .{ .r = 0.25, .g = 0.45, .b = 0.65, .a = 1.0 },
+    };
+
+    render_state.display.pip = sg.makePipeline(.{
+        .shader = sg.makeShader(display_shd.postShaderDesc(sg.queryBackend())),
+        .layout = init: {
+            var l = sg.VertexLayoutState{};
+            l.attrs[display_shd.ATTR_post_position] = .{ .format = .FLOAT2, .offset = @offsetOf(DisplayVertex, "pos") };
+            l.attrs[display_shd.ATTR_post_texcoord] = .{ .format = .FLOAT2, .offset = @offsetOf(DisplayVertex, "uv") };
+            break :init l;
         },
-    };
-    const blend_state: sg.BlendState = .{
-        .enabled = true,
-        .src_factor_rgb = .SRC_ALPHA,
-        .dst_factor_rgb = .ONE_MINUS_SRC_ALPHA,
-        .op_rgb = .ADD,
-        .src_factor_alpha = .ONE,
-        .dst_factor_alpha = .ONE_MINUS_SRC_ALPHA,
-        .op_alpha = .ADD,
-    };
-    pip_desc.colors[0] = .{ .blend = blend_state };
+        .index_type = .UINT16,
+        .cull_mode = .NONE,
+        .depth = .{
+            .compare = .LESS_EQUAL,
+            .write_enabled = true,
+        },
+    });
 
-    pip_desc.layout.buffers[0].stride = @sizeOf(QuadVertex);
-    pip_desc.layout.attrs[shd.ATTR_blank_position] = .{
-        .format = .FLOAT2,
-        .offset = @offsetOf(QuadVertex, "pos"),
+    // Display shader vertex/index buffers
+    const post_vertices = [_]DisplayVertex{
+        .{ .pos = .{ -1.0, -1.0 }, .uv = .{ 0.0, 1.0 } },
+        .{ .pos = .{ 1.0, -1.0 }, .uv = .{ 1.0, 1.0 } },
+        .{ .pos = .{ -1.0, 1.0 }, .uv = .{ 0.0, 0.0 } },
+        .{ .pos = .{ 1.0, 1.0 }, .uv = .{ 1.0, 0.0 } },
     };
-    pip_desc.layout.attrs[shd.ATTR_blank_texcoord] = .{
-        .format = .FLOAT2,
-        .offset = @offsetOf(QuadVertex, "uv"),
-    };
-    pip_desc.layout.attrs[shd.ATTR_blank_texture_index] = .{
-        .format = .UBYTE4,
-        .offset = @offsetOf(QuadVertex, "tex_idx"),
-    };
+    const post_indices = [_]u16{ 0, 1, 2, 1, 3, 2 };
+    render_state.display.bind.vertex_buffers[0] = sg.makeBuffer(.{
+        .data = sg.asRange(&post_vertices),
+    });
+    render_state.display.bind.index_buffer = sg.makeBuffer(.{
+        .data = sg.asRange(&post_indices),
+        .type = .INDEXBUFFER,
+    });
 
-    render_state.pip = sg.makePipeline(pip_desc);
+    render_state.display.bind.images[display_shd.IMG_offscreen_texture] = color_img;
+    render_state.display.bind.samplers[display_shd.SMP_offscreen_sampler] = sg.makeSampler(.{
+        .min_filter = .LINEAR,
+        .mag_filter = .LINEAR,
+        .wrap_u = .REPEAT,
+        .wrap_v = .REPEAT,
+    });
 }
 
-const MAX_FRAME_TIME_NS = 33_333_333.0;
+const MAX_FRAME_TIME_NS = 66_666_666.0;
 const TICK_TOLERANCE_NS = 1_000_000;
-const TICK_DURATION_NS = 16_666_666;
+const TICK_DURATION_NS = 33_333_333;
 
 export fn frame() void {
     var frame_time_ns = @as(f32, @floatCast(sapp.frameDuration() * 1000000000.0));
@@ -308,15 +386,19 @@ export fn frame() void {
 }
 
 fn render() void {
-    sg.beginPass(.{ .action = render_state.pass_action, .swapchain = sglue.swapchain() });
-    sg.applyPipeline(render_state.pip);
-    sg.applyBindings(render_state.bind);
+    // Offscreen pass
+    sg.beginPass(.{
+        .action = render_state.offscreen.pass_action,
+        .attachments = render_state.offscreen.attachments,
+    });
+    sg.applyPipeline(render_state.offscreen.pip);
+    sg.applyBindings(render_state.offscreen.bind);
 
-    render_state.vs_params.screen_size = .{
+    render_state.offscreen.vs_params.screen_size = .{
         @floatFromInt(sapp.width()), // screen width
         @floatFromInt(sapp.height()), // screen height
     };
-    sg.applyUniforms(0, sg.asRange(&render_state.vs_params));
+    sg.applyUniforms(0, sg.asRange(&render_state.offscreen.vs_params));
 
     var vertex_data: [MAX_SPRITES * 4]QuadVertex = std.mem.zeroes([MAX_SPRITES * 4]QuadVertex);
     var vertex_count: usize = 0;
@@ -362,11 +444,20 @@ fn render() void {
         vertex_count += 4;
     }
 
-    sg.updateBuffer(render_state.bind.vertex_buffers[0], sg.asRange(vertex_data[0..vertex_count]));
+    sg.updateBuffer(render_state.offscreen.bind.vertex_buffers[0], sg.asRange(vertex_data[0..vertex_count]));
 
     // Draw 6 vertexes for each sprite, 6 vertexes is 1 quad
     sg.draw(0, @intCast(draw_state.num_sprites * 6), 1);
     sg.endPass();
+
+    // Display pass
+    sg.beginPass(.{ .action = render_state.display.pass_action, .swapchain = sglue.swapchain() });
+    sg.applyPipeline(render_state.display.pip);
+    sg.applyBindings(render_state.display.bind);
+    // Draw 6 vertexes for 1 full-screen quad
+    sg.draw(0, 6, 1);
+    sg.endPass();
+
     sg.commit();
 }
 
@@ -405,8 +496,8 @@ pub fn main() void {
         .frame_cb = frame,
         .event_cb = input,
         .cleanup_cb = cleanup,
-        .width = tiles_width * sprite_size * render_scale,
-        .height = tiles_height * sprite_size * render_scale,
+        .width = screen_width,
+        .height = screen_height,
         .sample_count = 1,
         .icon = .{ .sokol_default = true },
         .window_title = "blank.zig",
