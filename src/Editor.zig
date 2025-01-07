@@ -11,10 +11,13 @@ const canvas_height = 10;
 const tileset_width = 12;
 const tileset_height = 11;
 
+const Canvas = [canvas_width * canvas_height]usize;
+
 const EditorState = struct {
     selected_tile: struct {
         index: usize = 0,
     } = .{},
+    canvas: Canvas = std.mem.zeroes(Canvas),
 };
 var editor_state = EditorState{};
 
@@ -60,6 +63,33 @@ pub fn update() void {
 var ignore_grid_position = rl.Vector2.init(0.0, 0.0);
 
 pub fn draw() void {
+    for (editor_state.canvas, 0..) |tile_index, canvas_index| {
+        const canvas_x = canvas_index % canvas_width;
+        const canvas_y = canvas_index / canvas_width;
+        const canvas_rect: rl.Rectangle = .{
+            .x = @as(f32, @floatFromInt(canvas_x)) * sprite_size,
+            .y = @as(f32, @floatFromInt(canvas_y)) * sprite_size,
+            .width = sprite_size,
+            .height = sprite_size,
+        };
+        const tile_x = tile_index % tileset_width;
+        const tile_y = tile_index / tileset_width;
+        const tile_rect = .{
+            .x = @as(f32, @floatFromInt(tile_x)) * sprite_size,
+            .y = @as(f32, @floatFromInt(tile_y)) * sprite_size,
+            .width = sprite_size,
+            .height = sprite_size,
+        };
+        rl.drawTexturePro(
+            dungeon_spritesheet,
+            tile_rect,
+            canvas_rect,
+            .{ .x = 0.0, .y = 0.0 },
+            0.0,
+            rl.Color.white,
+        );
+    }
+
     _ = rg.guiGrid(
         .{
             .x = 0,
@@ -95,10 +125,4 @@ pub fn draw() void {
     );
 
     _ = rg.guiGrid(tileset_rect, "TILESET", sprite_size, 1, &ignore_grid_position);
-
-    // rl.drawRectangleLinesEx(
-    //     editor_state.cursor.position.as_rect(),
-    //     1.0,
-    //     rl.Color.black,
-    // );
 }

@@ -12,7 +12,7 @@ const editor_camera: rl.Camera2D = .{
 };
 
 pub fn main() !void {
-    rl.initWindow(constants.window_width, constants.window_height, "Editor");
+    rl.initWindow(constants.window_width, constants.window_height + 32, "Editor");
     defer rl.closeWindow();
 
     Editor.preload();
