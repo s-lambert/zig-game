@@ -32,23 +32,26 @@ fn reset_key_cooldown() void {
     key_cooldown += 0.125;
 }
 pub fn update() void {
-    if (rl.isMouseButtonPressed(rl.MouseButton.mouse_button_left)) {
+    if (rl.isMouseButtonDown(rl.MouseButton.mouse_button_left)) {
         const mouse_pos = rl.getMousePosition();
         if (mouse_pos.y >= 0 and mouse_pos.y < sprite_size * canvas_height * 2.0 and
             mouse_pos.x >= 0 and mouse_pos.x < sprite_size * canvas_width * 2.0)
         {
-            const tile_x: i32 = @intFromFloat(mouse_pos.x / sprite_size / 2.0);
-            const tile_y: i32 = @intFromFloat(mouse_pos.y / sprite_size / 2.0);
+            const tile_x: usize = @intFromFloat(mouse_pos.x / sprite_size / 2.0);
+            const tile_y: usize = @intFromFloat(mouse_pos.y / sprite_size / 2.0);
             std.debug.print("canvas clicked: {d}, {d}\n", .{ tile_x, tile_y });
+            const tile_index = tile_x + (tile_y * canvas_width);
+            editor_state.canvas[tile_index] = editor_state.selected_tile.index;
         }
 
         if (mouse_pos.y >= sprite_size * canvas_height * 2.0 and
             mouse_pos.y < sprite_size * canvas_height * 2.0 + sprite_size * tileset_height * 2.0 and
             mouse_pos.x >= 0 and mouse_pos.x < sprite_size * tileset_width * 2.0)
         {
-            const tile_x: i32 = @intFromFloat(mouse_pos.x / sprite_size / 2.0);
-            const tile_y: i32 = @intFromFloat((mouse_pos.y - sprite_size * canvas_height * 2.0) / sprite_size / 2.0);
+            const tile_x: usize = @intFromFloat(mouse_pos.x / sprite_size / 2.0);
+            const tile_y: usize = @intFromFloat((mouse_pos.y - sprite_size * canvas_height * 2.0) / sprite_size / 2.0);
             std.debug.print("tileset clicked: {d}, {d}\n", .{ tile_x, tile_y });
+            editor_state.selected_tile.index = tile_x + (tile_y * tileset_width);
         }
     }
 
@@ -125,4 +128,26 @@ pub fn draw() void {
     );
 
     _ = rg.guiGrid(tileset_rect, "TILESET", sprite_size, 1, &ignore_grid_position);
+
+    const selected_tile_x = editor_state.selected_tile.index % tileset_width;
+    const selected_tile_y = editor_state.selected_tile.index / tileset_width;
+    const selected_tile_rect = .{
+        .x = tileset_rect.x + @as(f32, @floatFromInt(selected_tile_x)) * sprite_size,
+        .y = tileset_rect.y + @as(f32, @floatFromInt(selected_tile_y)) * sprite_size,
+        .width = sprite_size + 1.0,
+        .height = sprite_size + 1.0,
+    };
+    rl.drawRectangleLinesEx(
+        selected_tile_rect,
+        1.0,
+        rl.Color.black,
+    );
+
+    const clicked = rg.guiButton(.{
+        .x = tileset_rect.width,
+        .y = tileset_rect.y,
+        .width = 100,
+        .height = sprite_size,
+    }, "Save");
+    std.debug.print("{d}\n", .{clicked});
 }

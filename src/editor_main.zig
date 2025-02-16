@@ -1,5 +1,4 @@
 const rl = @import("raylib");
-const rg = @import("raygui");
 const utils = @import("./utils.zig");
 const Editor = @import("./Editor.zig");
 const constants = @import("./constants.zig");
